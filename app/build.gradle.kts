@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    kotlin("plugin.serialization") version "2.1.0"
 }
 
 android {
@@ -40,6 +41,18 @@ android {
 }
 
 dependencies {
+    // Supabase BOM for version consistency
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:3.0.1")
+    implementation("io.github.jan-tennert.supabase:auth-kt:3.0.1")
+    implementation("io.github.jan-tennert.supabase:realtime-kt:3.0.1")
+
+    // Ktor client (required by Supabase)
+    implementation("io.ktor:ktor-client-android:3.0.1")
+
+    // Serialization for the UserResume data class
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation("androidx.compose.material:material-icons-extended")
+    implementation(libs.androidx.navigation.compose)
     implementation("com.airbnb.android:lottie-compose:6.4.0")
     implementation("androidx.compose.material:material-icons-extended:1.6.0")
     implementation(libs.androidx.core.ktx)

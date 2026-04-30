@@ -40,12 +40,17 @@ fun OnboardingScreen(onFinished: () -> Unit) {
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding() // Ensures content doesn't hit the notch
+                .navigationBarsPadding()
+        ) {
 
             // 1. Pager takes the majority of the top space
             HorizontalPager(
                 state = pagerState,
-                modifier = Modifier.weight(0.8f) // Increased weight to push content down slightly
+                modifier = Modifier.weight(1f) // Increased weight to push content down slightly
             ) { index ->
                 val page = pages[index]
                 val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(page.resId))
@@ -56,13 +61,15 @@ fun OnboardingScreen(onFinished: () -> Unit) {
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Bottom, // Align content towards the bottom of the pager area
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 32.dp)
+                    verticalArrangement = Arrangement.Top, // Align content towards the bottom of the pager area
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 40.dp)
                 ) {
+                    Spacer(modifier = Modifier.height(100.dp))
+
                     LottieAnimation(
                         composition = composition,
                         progress = { progress },
-                        modifier = Modifier.size(320.dp) // Slightly larger for impact
+                        modifier = Modifier.size(280.dp) // Slightly larger for impact
                     )
 
                     Spacer(modifier = Modifier.height(40.dp))
@@ -71,7 +78,8 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                         text = page.title,
                         style = MaterialTheme.typography.headlineMedium, // Responsive font scaling
                         fontWeight = FontWeight.ExtraBold,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        letterSpacing = (-0.5).sp
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -81,7 +89,7 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                         style = MaterialTheme.typography.bodyLarge,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        lineHeight = 24.sp // Better legibility
+                        lineHeight = 22.sp // Better legibility
                     )
                 }
             }
@@ -91,31 +99,32 @@ fun OnboardingScreen(onFinished: () -> Unit) {
                 modifier = Modifier
                     .weight(0.2f)
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp),
+                    .padding(bottom = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
+
             ) {
                 // Page Indicator (Dots)
                 Row(
-                    Modifier.height(50.dp).fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
+                    Modifier.height(40.dp).fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     repeat(pages.size) { iteration ->
-                        val color = if (pagerState.currentPage == iteration)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.primaryContainer
-
+                        val isSelected = pagerState.currentPage == iteration
                         Box(
                             modifier = Modifier
                                 .padding(4.dp)
                                 .clip(CircleShape)
-                                .background(color)
-                                .size(if (pagerState.currentPage == iteration) 12.dp else 8.dp) // Active dot is larger
+                                .background(
+                                    if (isSelected) MaterialTheme.colorScheme.primary
+                                    else MaterialTheme.colorScheme.outlineVariant
+                                )
+                                .size(8.dp) // Uniform size for dots like iOS
                         )
                     }
                 }
 
+                Spacer(modifier = Modifier.height(12.dp))
                 // Primary Action Button
                 Button(
                     onClick = {

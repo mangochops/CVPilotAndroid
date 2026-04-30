@@ -15,6 +15,13 @@ import com.example.cvpilot.features.Resume.ResumeLibraryView
 import com.example.cvpilot.features.CoverLetter.CoverLetterView
 import com.example.cvpilot.features.Profile.ProfileView
 import com.example.cvpilot.ui.onboarding.OnboardingScreen
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.example.cvpilot.ui.theme.CvPilotTheme
+import com.example.cvpilot.authentication.SignUpView
+import com.example.cvpilot.authentication.LoginView
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Default.Home)
@@ -27,16 +34,50 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme {
+            CvPilotTheme {
                 // State to track if onboarding is complete
-                var showOnboarding by remember { mutableStateOf(true) }
+                var isLoggedIn by remember { mutableStateOf(false) } // Track auth state
 
-                if (showOnboarding) {
-                    OnboardingScreen(onFinished = {
-                        showOnboarding = false
-                    })
-                } else {
-                    MainScreen()
+                val rootNavController = rememberNavController()
+
+                NavHost(
+                    navController = rootNavController,
+                    // Start at onboarding for new users
+                    startDestination = "onboarding"
+                ) {
+                    // 1. Onboarding Screen
+                    composable("onboarding") {
+                        OnboardingScreen(onFinished = {
+                            // Navigate to signup and clear onboarding from backstack
+                            rootNavController.navigate("signup") {
+                                popUpTo("onboarding") { inclusive = true }
+                            }
+                        })
+                    }
+
+                    // 2. Auth Flow
+                    composable("login") {
+                        LoginView(
+                            onNavigateToSignUp = { rootNavController.navigate("signup") },
+                            onLoginSuccess = {
+                                isLoggedIn = true
+                                rootNavController.navigate("main_app") {
+                                    popUpTo("login") { inclusive = true }
+                                }
+                            }
+                        )
+                    }
+
+                    composable("signup") {
+                        SignUpView(onBackToLogin = {
+                            rootNavController.navigate("login")
+                        })
+                    }
+
+                    // 3. Main App Flow
+                    composable("main_app") {
+                        MainScreen()
+                    }
                 }
             }
         }
@@ -54,6 +95,7 @@ fun MainScreen() {
 
     // Track the currently selected tab
     var selectedItem by remember { mutableIntStateOf(0) }
+    val navController = rememberNavController()
 
     Scaffold(
         bottomBar = {
@@ -79,7 +121,24 @@ fun MainScreen() {
             0 -> HomeView(modifier)
             1 -> ResumeLibraryView(modifier)
             2 -> CoverLetterView(modifier)
-            3 -> ProfileView(modifier)
+            3 -> ProfileView(
+                onNavigate = { route ->
+                    // This mirrors your iOS NavigationStack logic
+                    when (route) {
+                        "edit_profile" -> navController.navigate("edit_profile_screen")
+                        "premium" -> navController.navigate("premium_subscription_screen")
+                        "resumes" -> {
+                            // You could also jump to a different bottom tab
+                            selectedItem = 1
+                        }
+                        "analytics" -> navController.navigate("ats_analytics_screen")
+                        "support" -> navController.navigate("contact_support_screen")
+                        "privacy" -> navController.navigate("privacy_policy_screen")
+                    }
+                    println("Navigating to $route")
+                },
+                modifier = modifier
+            )
         }
     }
 }
