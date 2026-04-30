@@ -22,6 +22,8 @@ import com.example.cvpilot.authentication.SignUpView
 import com.example.cvpilot.authentication.LoginView
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.cvpilot.authentication.AuthViewModel
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Default.Home)
@@ -58,6 +60,7 @@ class MainActivity : ComponentActivity() {
                     // 2. Auth Flow
                     composable("login") {
                         LoginView(
+                            viewModel = viewModel(factory = AuthViewModel.Factory),
                             onNavigateToSignUp = { rootNavController.navigate("signup") },
                             onLoginSuccess = {
                                 isLoggedIn = true
@@ -69,9 +72,13 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable("signup") {
-                        SignUpView(onBackToLogin = {
-                            rootNavController.navigate("login")
-                        })
+                        SignUpView(
+                            // THIS IS THE CRITICAL ADDITION
+                            viewModel = viewModel(factory = AuthViewModel.Factory),
+                            onBackToLogin = {
+                                rootNavController.navigate("login")
+                            }
+                        )
                     }
 
                     // 3. Main App Flow

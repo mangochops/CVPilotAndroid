@@ -24,7 +24,7 @@ data class UserResume(
 object SupabaseManager {
 
     private const val URL = "https://eocldmwhgovgdhuttwgs.supabase.co"
-    private const val ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." // Use your full key here
+    private const val ANON_KEY = "sb_publishable_25DHcb2BpSRJWVNtNWWETg_LzHFVppL" // Use your full key here
 
     val client = createSupabaseClient(
         supabaseUrl = URL,

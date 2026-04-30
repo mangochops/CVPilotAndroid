@@ -16,11 +16,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
 fun SignUpView(
-    viewModel: AuthViewModel = viewModel(), // Connect your real ViewModel
+    viewModel: AuthViewModel = viewModel(factory = AuthViewModel.Factory), // Connect your real ViewModel
                onBackToLogin: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
-    var isSuccess by remember { mutableStateOf(false) }
+    var isSuccess = viewModel.isSuccess
 
     // Prepare Lottie composition
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.pilot))

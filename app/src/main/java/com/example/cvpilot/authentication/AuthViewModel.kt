@@ -6,6 +6,7 @@ import androidx.compose.runtime.setValue // Required for 'by'
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope // Required for viewModelScope
 import kotlinx.coroutines.launch // Required for launch
+import androidx.lifecycle.ViewModelProvider
 
 class AuthViewModel(private val authService: AuthService) : ViewModel() {
     var email by mutableStateOf("")
@@ -15,6 +16,15 @@ class AuthViewModel(private val authService: AuthService) : ViewModel() {
     var isLoading by mutableStateOf(false)
     var errorMessage by mutableStateOf<String?>(null)
     var isSuccess by mutableStateOf(false)
+
+    companion object {
+        val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return AuthViewModel(AuthService()) as T
+            }
+        }
+    }
 
     fun onLogin(onSuccess: () -> Unit) {
         viewModelScope.launch {
