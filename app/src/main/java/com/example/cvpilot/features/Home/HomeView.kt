@@ -14,9 +14,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.cvpilot.ui.component.ResumeCard
+import com.example.cvpilot.ui.component.LinkedInImportView
+import com.example.cvpilot.ui.component.UploadJobAdView
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @Composable
-fun HomeView(modifier: Modifier = Modifier) {
+fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = viewModel() ) {
+    var showLinkedInImport by remember { mutableStateOf(false) }
+    var showJobAdEntry by remember { mutableStateOf(false) }
+
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -43,9 +51,9 @@ fun HomeView(modifier: Modifier = Modifier) {
 
         // Action Cards (Logic for clicking can be added via lambdas)
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            ActionCard("Edit Primary CV", "Store your master resume", Icons.Default.ContactPage, Color(0xFF2196F3))
-            ActionCard("Tailor CV for Job", "Paste job link or upload PDF", Icons.Default.AutoAwesome, Color(0xFF9C27B0))
-            ActionCard("Import from LinkedIn", "Upload LinkedIn profile PDF", Icons.Default.Link, Color(0xFF4CAF50))
+            ActionCard("Edit Primary CV", "Store your master resume", Icons.Default.ContactPage, Color(0xFF2196F3),onClick = { TODO() })
+            ActionCard("Tailor CV for Job", "Paste job link or upload PDF", Icons.Default.AutoAwesome, Color(0xFF9C27B0), onClick = { showJobAdEntry = true })
+            ActionCard("Import from LinkedIn", "Upload LinkedIn profile PDF", Icons.Default.Link, Color(0xFF4CAF50), onClick = { showLinkedInImport = true })
         }
 
         // Recent Resumes Section
@@ -55,16 +63,44 @@ fun HomeView(modifier: Modifier = Modifier) {
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
             )
             // Replace with your actual list logic
-            Text("No resumes yet", color = MaterialTheme.colorScheme.outline)
+            // Inside HomeView.kt
+            if (viewModel.isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+            } else {
+                viewModel.resumes.forEach { resume ->
+                    ResumeCard(
+                        name = resume.name,
+                        title = "Tailored CV",
+                        date = resume.date,
+                        content = resume.content // This now shows the actual PDF text
+                    )
+                }
+            }
         }
+    }
+    // Overlay Sheets (Conditional Rendering)
+    if (showLinkedInImport) {
+        LinkedInImportView(
+            onDismiss = { showLinkedInImport = false },
+            onContinue = { text ->
+                // Handle the imported text here
+                showLinkedInImport = false
+            }
+        )
+    }
+
+    if (showJobAdEntry) {
+        UploadJobAdView(
+            onDismiss = { showJobAdEntry = false }
+        )
     }
 }
 
 @Composable
-fun ActionCard(title: String, subtitle: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color) {
+fun ActionCard(title: String, subtitle: String, icon: androidx.compose.ui.graphics.vector.ImageVector, color: Color, onClick: () -> Unit) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        onClick = { /* Handle Click */ }
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier.padding(16.dp),

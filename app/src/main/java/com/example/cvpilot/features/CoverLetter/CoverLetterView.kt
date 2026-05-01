@@ -18,13 +18,17 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.AutoAwesome // If using standard
-
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CoverLetterView(modifier: Modifier = Modifier) {
+fun CoverLetterView(
+    modifier: Modifier = Modifier,
+    viewModel: CoverLetterViewModel = hiltViewModel()
+) {
     var jobDescription by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
+    val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
         topBar = {
@@ -38,8 +42,8 @@ fun CoverLetterView(modifier: Modifier = Modifier) {
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(scrollState)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(25.dp)
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
             // Header Section
             Text(
@@ -56,12 +60,21 @@ fun CoverLetterView(modifier: Modifier = Modifier) {
 
             // Generate Button
             Button(
-                onClick = { println("Generating: $jobDescription") },
+                onClick = { viewModel.generateCoverLetter() },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(54.dp),
                 shape = RoundedCornerShape(12.dp)
-            ) {
+                enabled = !uiState.isLoading && viewModel.jobDescription.isNotBlank(),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+            ){
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
                 Icon(Icons.Default.AutoAwesome, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text("Generate AI Cover Letter", fontWeight = FontWeight.SemiBold)
@@ -90,20 +103,19 @@ fun JobDescriptionCard(text: String, onValueChange: (String) -> Unit) {
                 Text("Paste Job Description", style = MaterialTheme.typography.titleMedium)
             }
 
-            TextField(
+            OutlinedTextField(
                 value = text,
                 onValueChange = onValueChange,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp)
-                    .border(1.dp, Color.Gray.copy(alpha = 0.3f), RoundedCornerShape(20.dp)),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
+                    .height(160.dp), // Adjusted height for better screen balance
+                shape = RoundedCornerShape(12.dp),
+                placeholder = { Text("Enter the job requirements here...", style = MaterialTheme.typography.bodyMedium) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary
                 ),
-                placeholder = { Text("Enter the job requirements here...") }
+                textStyle = MaterialTheme.typography.bodyMedium
             )
         }
     }

@@ -32,6 +32,7 @@ object SupabaseManager {
     ) {
         install(Postgrest)
         install(Auth)
+        install(io.github.jan.supabase.storage.Storage)
     }
 
     /**

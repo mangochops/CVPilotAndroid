@@ -1,8 +1,14 @@
 plugins {
     alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    kotlin("plugin.serialization") version "2.1.0"
+    alias(libs.plugins.kotlin.kapt)
+
+    // Just the ID here, version is inherited from the root
+    id("com.google.dagger.hilt.android")
 }
+
+
 
 android {
     namespace = "com.example.cvpilot"
@@ -41,10 +47,18 @@ android {
 }
 
 dependencies {
+    // Hilt dependencies
+    implementation("com.google.dagger:hilt-android:2.51")
+    kapt("com.google.dagger:hilt-android-compiler:2.51")
+
+    // For hiltViewModel() in Compose
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     // Supabase BOM for version consistency
     implementation("io.github.jan-tennert.supabase:postgrest-kt:3.0.1")
     implementation("io.github.jan-tennert.supabase:auth-kt:3.0.1")
     implementation("io.github.jan-tennert.supabase:realtime-kt:3.0.1")
+    implementation("io.github.jan-tennert.supabase:storage-kt:3.0.1")
+    implementation("com.tom-roush:pdfbox-android:2.0.27.0")
 
     // Ktor client (required by Supabase)
     implementation("io.ktor:ktor-client-android:3.0.1")
@@ -64,6 +78,8 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.material3.adaptive.navigation.suite)
+    implementation(libs.androidx.material3)
+    implementation(libs.androidx.ui)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
