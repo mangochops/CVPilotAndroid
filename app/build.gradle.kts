@@ -1,10 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.kotlin.kapt)
-
-    // Just the ID here, version is inherited from the root
+    // Use manual IDs for these two to prevent alias-lookup collisions
+    id("org.jetbrains.kotlin.plugin.compose") version "2.1.0"
+    id("org.jetbrains.kotlin.kapt")
     id("com.google.dagger.hilt.android")
 }
 
@@ -13,7 +12,7 @@ plugins {
 android {
     namespace = "com.example.cvpilot"
     compileSdk {
-        version = release(36) {
+        version = release(35) {
             minorApiLevel = 1
         }
     }
@@ -21,7 +20,7 @@ android {
     defaultConfig {
         applicationId = "com.example.cvpilot"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
