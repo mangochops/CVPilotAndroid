@@ -66,6 +66,9 @@ android {
 
 dependencies {
 
+    implementation("com.revenuecat.purchases:purchases:8.4.0")
+    implementation("com.revenuecat.purchases:purchases-ui:8.4.0")
+
     implementation("io.ktor:ktor-client-android:3.0.1")
     implementation("io.ktor:ktor-client-content-negotiation:3.0.1")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.1")

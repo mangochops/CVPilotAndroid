@@ -19,7 +19,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.AutoAwesome // If using standard
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.cvpilot.paywall.RevenueCatPaywall
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.cvpilot.ui.component.StreamingText
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,6 +32,7 @@ fun CoverLetterView(
     var jobDescription by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
     val uiState by viewModel.uiState.collectAsState()
+    val showPaywall = viewModel.showPaywall
 
     Scaffold(
         topBar = {
@@ -61,7 +64,7 @@ fun CoverLetterView(
 
             // Generate Button
             Button(
-                onClick = { viewModel.generateCoverLetter() },
+                onClick = { viewModel.onGenerateClicked() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
@@ -69,21 +72,80 @@ fun CoverLetterView(
                 enabled = !uiState.isLoading && jobDescription.isNotBlank(),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
             ){
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        strokeWidth = 2.dp
-                    )
-                } else {
+//                if (uiState.generatedLetter.isNotEmpty() || uiState.isLoading) {
+//
+//                    Spacer(modifier = Modifier.height(16.dp))
+//
+//                    Card(
+//                        modifier = Modifier.fillMaxWidth(),
+//                        shape = RoundedCornerShape(16.dp),
+//                        colors = CardDefaults.cardColors(
+//                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+//                        )
+//                    ) {
+//                        Column(modifier = Modifier.padding(16.dp)) {
+//
+//                            Text(
+//                                text = "Generated Cover Letter",
+//                                style = MaterialTheme.typography.titleMedium,
+//                                fontWeight = FontWeight.Bold
+//                            )
+//
+//                            Spacer(modifier = Modifier.height(8.dp))
+//
+//                            StreamingText(uiState.generatedLetter, uiState.isLoading)
+//                        }
+//                    }
+//                }
+
+
+
+            }
+
+            if (uiState.isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
                 Icon(Icons.Default.AutoAwesome, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Generate AI Cover Letter", fontWeight = FontWeight.SemiBold)
+                Text("Generate AI Cover Letter")
             }
+
+            // Live Output Card
+            if (uiState.generatedLetter.isNotEmpty() || uiState.isLoading) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Generated Cover Letter",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        StreamingText(uiState.generatedLetter, uiState.isLoading)
+                    }
+                }
             }
 
             // Quick Tools Section
             QuickToolsSection()
+            if (showPaywall) {
+                RevenueCatPaywall(
+                    onDismiss = {
+                        viewModel.dismissPaywall()
+                    },
+                    onSuccess = {
+                        viewModel.onPaywallSuccess()
+                    }
+                )
+            }
         }
     }
 }
@@ -157,3 +219,4 @@ fun AIQuickToolItem(title: String, icon: ImageVector) {
         }
     }
 }
+
