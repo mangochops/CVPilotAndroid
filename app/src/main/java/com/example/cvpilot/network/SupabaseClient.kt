@@ -7,6 +7,16 @@ import io.github.jan.supabase.auth.Auth // Use . not -
 import io.github.jan.supabase.auth.auth // Use . not -
 import kotlinx.serialization.Serializable
 import java.util.Date
+import com.example.cvpilot.BuildConfig
+
+val client = createSupabaseClient(
+    supabaseUrl = BuildConfig.SUPABASE_URL,
+    supabaseKey = BuildConfig.SUPABASE_ANON_KEY
+){
+    install(Postgrest)
+    install(Auth)
+    install(io.github.jan.supabase.storage.Storage)
+}
 
 // 1. Define your Data Model for Supabase
 @Serializable

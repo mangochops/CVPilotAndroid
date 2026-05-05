@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.material.icons.filled.AutoAwesome // If using standard
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,8 +65,8 @@ fun CoverLetterView(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(54.dp),
-                shape = RoundedCornerShape(12.dp)
-                enabled = !uiState.isLoading && viewModel.jobDescription.isNotBlank(),
+                shape = RoundedCornerShape(12.dp),
+                enabled = !uiState.isLoading && jobDescription.isNotBlank(),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
             ){
                 if (uiState.isLoading) {
@@ -78,6 +79,7 @@ fun CoverLetterView(
                 Icon(Icons.Default.AutoAwesome, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text("Generate AI Cover Letter", fontWeight = FontWeight.SemiBold)
+            }
             }
 
             // Quick Tools Section
