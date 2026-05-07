@@ -40,11 +40,11 @@ class CoverLetterViewModel @Inject constructor(
     var jobDescription by mutableStateOf("")
         private set
 
-    private var _showPaywall by mutableStateOf(false)
-    val showPaywall: Boolean get() = _showPaywall
+    private var _showPaywall = mutableStateOf(false)
+    val showPaywall: Boolean get() = _showPaywall.value
 
     fun dismissPaywall() {
-        _showPaywall = false
+        _showPaywall.value = false
     }
 
     private val _uiState = MutableStateFlow(CoverLetterUiState())
@@ -69,13 +69,13 @@ class CoverLetterViewModel @Inject constructor(
             if (isPro) {
                 executeAiGeneration()
             } else {
-                _showPaywall = true
+                _showPaywall.value = true
             }
         }
     }
 
     fun onPaywallSuccess() {
-        _showPaywall = false
+        _showPaywall.value = false
         executeAiGeneration()
     }
 
@@ -110,7 +110,7 @@ class CoverLetterViewModel @Inject constructor(
 
                     if (httpResponse.status.value == 402) {
                         _uiState.update { it.copy(isLoading = false, errorMessage = "No credits remaining.") }
-                        _showPaywall = true
+                        _showPaywall.value = true
                         return@execute
                     }
 

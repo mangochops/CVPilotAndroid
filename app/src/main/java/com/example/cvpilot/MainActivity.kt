@@ -24,6 +24,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cvpilot.authentication.AuthViewModel
+import dagger.hilt.android.AndroidEntryPoint
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.cvpilot.authentication.AuthService
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModel
+
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Default.Home)
@@ -32,6 +38,7 @@ sealed class Screen(val route: String, val title: String, val icon: ImageVector)
     object Profile : Screen("profile", "Profile", Icons.Default.AccountCircle)
 }
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +48,15 @@ class MainActivity : ComponentActivity() {
                 var isLoggedIn by remember { mutableStateOf(false) } // Track auth state
 
                 val rootNavController = rememberNavController()
+
+
+                val authViewModel: AuthViewModel = viewModel(
+                    factory = object : ViewModelProvider.Factory {
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return AuthViewModel(AuthService()) as T
+                        }
+                    }
+                )
 
                 NavHost(
                     navController = rootNavController,
@@ -59,8 +75,9 @@ class MainActivity : ComponentActivity() {
 
                     // 2. Auth Flow
                     composable("login") {
+
                         LoginView(
-                            viewModel = viewModel(factory = AuthViewModel.Factory),
+                            viewModel = authViewModel,
                             onNavigateToSignUp = { rootNavController.navigate("signup") },
                             onLoginSuccess = {
                                 isLoggedIn = true
@@ -72,9 +89,10 @@ class MainActivity : ComponentActivity() {
                     }
 
                     composable("signup") {
+
                         SignUpView(
                             // THIS IS THE CRITICAL ADDITION
-                            viewModel = viewModel(factory = AuthViewModel.Factory),
+                            viewModel = authViewModel,
                             onBackToLogin = {
                                 rootNavController.navigate("login")
                             }
@@ -83,7 +101,33 @@ class MainActivity : ComponentActivity() {
 
                     // 3. Main App Flow
                     composable("main_app") {
-                        MainScreen()
+                        MainScreen(
+                            onNavigateToDeepScreen = { destinationRoute ->
+                                rootNavController.navigate(destinationRoute)
+                            }
+                        )
+                    }
+
+                    composable("edit_profile_screen") {
+                        // TODO: Implement EditProfileView()
+                        Text("Edit Profile Screen")
+
+                    }
+                    composable("premium_subscription_screen") {
+                        // TODO: Implement PremiumSubscriptionView()
+                        Text("Premium Subscription Screen")
+                    }
+                    composable("ats_analytics_screen") {
+                        // TODO: Implement AtsAnalyticsView()
+                        Text("ATS Analytics Screen")
+                    }
+                    composable("contact_support_screen") {
+                        // TODO: Implement ContactSupportView()
+                        Text("Contact Support Screen")
+                    }
+                    composable("privacy_policy_screen") {
+                        // TODO: Implement PrivacyPolicyView()
+                        Text("Privacy Policy Screen")
                     }
                 }
             }
@@ -92,7 +136,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen() {
+fun MainScreen(onNavigateToDeepScreen: (String) -> Unit) {
     val items = listOf(
         Screen.Home,
         Screen.Resumes,
@@ -102,7 +146,6 @@ fun MainScreen() {
 
     // Track the currently selected tab
     var selectedItem by remember { mutableIntStateOf(0) }
-    val navController = rememberNavController()
 
     Scaffold(
         bottomBar = {
@@ -132,15 +175,15 @@ fun MainScreen() {
                 onNavigate = { route ->
                     // This mirrors your iOS NavigationStack logic
                     when (route) {
-                        "edit_profile" -> navController.navigate("edit_profile_screen")
-                        "premium" -> navController.navigate("premium_subscription_screen")
                         "resumes" -> {
-                            // You could also jump to a different bottom tab
+                            // Switches the active bottom bar tab to index 1 (Resumes)
                             selectedItem = 1
                         }
-                        "analytics" -> navController.navigate("ats_analytics_screen")
-                        "support" -> navController.navigate("contact_support_screen")
-                        "privacy" -> navController.navigate("privacy_policy_screen")
+                        "edit_profile" -> onNavigateToDeepScreen("edit_profile_screen")
+                        "premium" -> onNavigateToDeepScreen("premium_subscription_screen")
+                        "analytics" -> onNavigateToDeepScreen("ats_analytics_screen")
+                        "support" -> onNavigateToDeepScreen("contact_support_screen")
+                        "privacy" -> onNavigateToDeepScreen("privacy_policy_screen")
                     }
                     println("Navigating to $route")
                 },

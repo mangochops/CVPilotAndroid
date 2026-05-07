@@ -6,9 +6,13 @@ import androidx.compose.runtime.setValue // Required for 'by'
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope // Required for viewModelScope
 import kotlinx.coroutines.launch // Required for launch
-import androidx.lifecycle.ViewModelProvider
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 
-class AuthViewModel(private val authService: AuthService) : ViewModel() {
+@HiltViewModel
+class AuthViewModel @Inject constructor(
+    private val authService: AuthService
+) : ViewModel() {
     var email by mutableStateOf("")
     var password by mutableStateOf("")
     var fullName by mutableStateOf("")
@@ -17,14 +21,7 @@ class AuthViewModel(private val authService: AuthService) : ViewModel() {
     var errorMessage by mutableStateOf<String?>(null)
     var isSuccess by mutableStateOf(false)
 
-    companion object {
-        val Factory: ViewModelProvider.Factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return AuthViewModel(AuthService()) as T
-            }
-        }
-    }
+
 
     fun onLogin(onSuccess: () -> Unit) {
         viewModelScope.launch {

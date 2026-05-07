@@ -22,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cvpilot.paywall.RevenueCatPaywall
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cvpilot.ui.component.StreamingText
+import androidx.compose.runtime.getValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,35 +73,7 @@ fun CoverLetterView(
                 enabled = !uiState.isLoading && jobDescription.isNotBlank(),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
             ){
-//                if (uiState.generatedLetter.isNotEmpty() || uiState.isLoading) {
-//
-//                    Spacer(modifier = Modifier.height(16.dp))
-//
-//                    Card(
-//                        modifier = Modifier.fillMaxWidth(),
-//                        shape = RoundedCornerShape(16.dp),
-//                        colors = CardDefaults.cardColors(
-//                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-//                        )
-//                    ) {
-//                        Column(modifier = Modifier.padding(16.dp)) {
-//
-//                            Text(
-//                                text = "Generated Cover Letter",
-//                                style = MaterialTheme.typography.titleMedium,
-//                                fontWeight = FontWeight.Bold
-//                            )
-//
-//                            Spacer(modifier = Modifier.height(8.dp))
-//
-//                            StreamingText(uiState.generatedLetter, uiState.isLoading)
-//                        }
-//                    }
-//                }
 
-
-
-            }
 
             if (uiState.isLoading) {
                 CircularProgressIndicator(
@@ -111,7 +84,7 @@ fun CoverLetterView(
                 Icon(Icons.Default.AutoAwesome, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text("Generate AI Cover Letter")
-            }
+            }}
 
             // Live Output Card
             if (uiState.generatedLetter.isNotEmpty() || uiState.isLoading) {

@@ -8,18 +8,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun LoginView(
-    viewModel: AuthViewModel = viewModel(),
+    viewModel: AuthViewModel = hiltViewModel(),
     onNavigateToSignUp: () -> Unit,
     onLoginSuccess: () -> Unit
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    val scope = rememberCoroutineScope()
+
 
     Column(
         modifier = Modifier
@@ -37,16 +34,16 @@ fun LoginView(
         Spacer(modifier = Modifier.height(20.dp))
 
         OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
+            value = viewModel.email,
+            onValueChange = { viewModel.email = it },
             label = { Text("Email") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true
         )
 
         OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
+            value = viewModel.password,
+            onValueChange = { viewModel.password = it },
             label = { Text("Password") },
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth(),
@@ -58,19 +55,25 @@ fun LoginView(
         Button(
             onClick = {
                 // Call your AuthService.signIn here
-                onLoginSuccess()
+                viewModel.onLogin(onSuccess = onLoginSuccess)
             },
             modifier = Modifier.fillMaxWidth(),
+            enabled = !viewModel.isLoading,
             shape = MaterialTheme.shapes.medium
         ) {
-            Text("Login")
+            if (viewModel.isLoading) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
+            } else {
+                Text("Login")
+            }
         }
 
         TextButton(onClick = onNavigateToSignUp) {
             Text("Create Account")
         }
 
-        errorMessage?.let {
+        viewModel.errorMessage?.let {
+            Spacer(modifier = Modifier.height(8.dp))
             Text(text = it, color = MaterialTheme.colorScheme.error)
         }
     }

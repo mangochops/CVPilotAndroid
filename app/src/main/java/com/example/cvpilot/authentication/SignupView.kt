@@ -12,11 +12,11 @@ import androidx.compose.ui.unit.dp
 // Lottie Imports
 import com.airbnb.lottie.compose.*
 import com.example.cvpilot.R
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun SignUpView(
-    viewModel: AuthViewModel = viewModel(factory = AuthViewModel.Factory), // Connect your real ViewModel
+    viewModel: AuthViewModel = hiltViewModel(), // Connect your real ViewModel
                onBackToLogin: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }

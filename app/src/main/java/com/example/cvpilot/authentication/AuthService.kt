@@ -5,8 +5,9 @@ import io.github.jan.supabase.auth.providers.builtin.Email
 import com.example.cvpilot.network.SupabaseManager
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import javax.inject.Inject
 
-class AuthService {
+class AuthService @Inject constructor(){
     private val client = SupabaseManager.client
 
     suspend fun signIn(email: String, pass: String): Result<Unit> {

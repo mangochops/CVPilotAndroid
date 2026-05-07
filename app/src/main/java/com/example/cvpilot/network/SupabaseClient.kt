@@ -9,14 +9,6 @@ import kotlinx.serialization.Serializable
 import java.util.Date
 import com.example.cvpilot.BuildConfig
 
-val client = createSupabaseClient(
-    supabaseUrl = BuildConfig.SUPABASE_URL,
-    supabaseKey = BuildConfig.SUPABASE_ANON_KEY
-){
-    install(Postgrest)
-    install(Auth)
-    install(io.github.jan.supabase.storage.Storage)
-}
 
 // 1. Define your Data Model for Supabase
 @Serializable
@@ -33,8 +25,8 @@ data class UserResume(
 
 object SupabaseManager {
 
-    private const val URL = "https://eocldmwhgovgdhuttwgs.supabase.co"
-    private const val ANON_KEY = "sb_publishable_25DHcb2BpSRJWVNtNWWETg_LzHFVppL" // Use your full key here
+    private const val URL = BuildConfig.SUPABASE_URL
+    private const val ANON_KEY = BuildConfig.SUPABASE_ANON_KEY // Use your full key here
 
     val client = createSupabaseClient(
         supabaseUrl = URL,
