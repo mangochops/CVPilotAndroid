@@ -23,6 +23,15 @@ import com.example.cvpilot.paywall.RevenueCatPaywall
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.cvpilot.ui.component.StreamingText
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.cvpilot.R
+import com.airbnb.lottie.compose.LottieConstants
+import com.airbnb.lottie.compose.animateLottieCompositionAsState
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.rememberLottieComposition
+import com.airbnb.lottie.compose.LottieAnimation
+import androidx.compose.foundation.text.selection.SelectionContainer
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,10 +39,17 @@ fun CoverLetterView(
     modifier: Modifier = Modifier,
     viewModel: CoverLetterViewModel = hiltViewModel()
 ) {
-    var jobDescription by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
-    val uiState by viewModel.uiState.collectAsState()
-    val showPaywall = viewModel.showPaywall
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val jobDescription by viewModel.jobDescription.collectAsStateWithLifecycle() // Unwraps StateFlow<String>
+    val showPaywall by viewModel.showPaywall.collectAsStateWithLifecycle()     // Unwraps StateFlow<Boolean>
+
+    // Lottie Animation Setup
+    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.ai))
+    val progress by animateLottieCompositionAsState(
+        composition = composition,
+        iterations = LottieConstants.IterateForever
+    )
 
     Scaffold(
         topBar = {
@@ -50,44 +66,50 @@ fun CoverLetterView(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Header Section
-            Text(
-                text = "Smart tools for job applications",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary
-            )
-
-            // Job Description Card
-            JobDescriptionCard(
-                text = jobDescription,
-                onValueChange = { jobDescription = it }
-            )
-
-            // Generate Button
-            Button(
-                onClick = { viewModel.onGenerateClicked() },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(54.dp),
-                shape = RoundedCornerShape(12.dp),
-                enabled = !uiState.isLoading && jobDescription.isNotBlank(),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
-            ){
-
-
-            if (uiState.isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(20.dp),
-                    strokeWidth = 2.dp
+            // --- 1. INPUT STATE ---
+            if (!uiState.isLoading && uiState.generatedLetter.isEmpty()) {
+                JobDescriptionCard(
+                    text = jobDescription,
+                    onValueChange = { viewModel.updateJobDescription(it) }
                 )
-            } else {
-                Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Generate AI Cover Letter")
-            }}
 
-            // Live Output Card
-            if (uiState.generatedLetter.isNotEmpty() || uiState.isLoading) {
+                Button(
+                    onClick = { viewModel.onGenerateClicked() },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(54.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    enabled =jobDescription.isNotBlank(),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                ) {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Generate with AI")
+                }
+            }
+
+            // --- 2. LOADING STATE ---
+            if (uiState.isLoading) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    LottieAnimation(
+                        composition = composition,
+                        progress = { progress },
+                        modifier = Modifier.size(240.dp)
+                    )
+                    Spacer(Modifier.height(16.dp))
+                    Text(
+                        "AI is crafting your letter...",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+
+            // --- 3. RESULT STATE ---
+            if (uiState.generatedLetter.isNotEmpty() && !uiState.isLoading) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
@@ -96,32 +118,71 @@ fun CoverLetterView(
                     )
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Generated Cover Letter",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
+                        Text("Generated Cover Letter", fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(8.dp))
-                        StreamingText(uiState.generatedLetter, uiState.isLoading)
+                        SelectionContainer {
+                            Text(
+                                text = uiState.generatedLetter,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
                     }
+                }
+
+                OutlinedButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { viewModel.updateJobDescription("") },
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.Refresh, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("Start Over")
                 }
             }
 
-            // Quick Tools Section
-            QuickToolsSection()
-            if (showPaywall) {
-                RevenueCatPaywall(
-                    onDismiss = {
-                        viewModel.dismissPaywall()
-                    },
-                    onSuccess = {
-                        viewModel.onPaywallSuccess()
-                    }
-                )
+            // --- 4. PERSISTENT TOOLS ---
+            if (!uiState.isLoading) {
+                QuickToolsSection()
             }
+        } // End of Column
+
+        // Paywall Logic
+        if (showPaywall) {
+            RevenueCatPaywall(
+                onDismiss = { viewModel.dismissPaywall() },
+                onSuccess = { viewModel.onPaywallSuccess() }
+            )
         }
-    }
-}
+    } // End of Scaffold
+} // End of CoverLetterView function
+
+            // Live Output Card
+//            if (uiState.generatedLetter.isNotEmpty() || uiState.isLoading) {
+//                Card(
+//                    modifier = Modifier.fillMaxWidth(),
+//                    shape = RoundedCornerShape(16.dp),
+//                    colors = CardDefaults.cardColors(
+//                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+//                    )
+//                ) {
+//                    Column(modifier = Modifier.padding(16.dp)) {
+//                        Text(
+//                            text = "Generated Cover Letter",
+//                            style = MaterialTheme.typography.titleMedium,
+//                            fontWeight = FontWeight.Bold
+//                        )
+//                        Spacer(modifier = Modifier.height(8.dp))
+//                        StreamingText(uiState.generatedLetter, uiState.isLoading)
+//                    }
+//                }
+//            }
+
+            // Quick Tools Section
+
+
+
+
+
 
 @Composable
 fun JobDescriptionCard(text: String, onValueChange: (String) -> Unit) {

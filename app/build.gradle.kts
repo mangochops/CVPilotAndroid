@@ -11,7 +11,7 @@ plugins {
 
 android {
     namespace = "com.example.cvpilot"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.cvpilot"

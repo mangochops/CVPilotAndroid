@@ -1,28 +1,25 @@
 package com.example.cvpilot.features.CoverLetter
 
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cvpilot.paywall.RevenueCatManager
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.ktor.client.*
-import io.ktor.client.engine.android.*
-import io.ktor.client.plugins.*
+import io.ktor.client.plugins.timeout
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import io.ktor.utils.io.*
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.*
 import javax.inject.Inject
 import dagger.hilt.android.lifecycle.HiltViewModel
 
@@ -34,43 +31,48 @@ data class CoverLetterUiState(
 
 @HiltViewModel
 class CoverLetterViewModel @Inject constructor(
-    private val supabaseClient: SupabaseClient // Inject your initialized Supabase Client wrapper
+    private val supabaseClient: SupabaseClient,
+    private val httpClient: HttpClient
 ) : ViewModel() {
 
-    var jobDescription by mutableStateOf("")
-        private set
-
-    private var _showPaywall = mutableStateOf(false)
-    val showPaywall: Boolean get() = _showPaywall.value
-
-    fun dismissPaywall() {
-        _showPaywall.value = false
-    }
+    // Use StateFlow instead of mutableStateOf to avoid Binder Transaction issues
+    private val _jobDescription = MutableStateFlow("")
+    val jobDescription = _jobDescription.asStateFlow()
 
     private val _uiState = MutableStateFlow(CoverLetterUiState())
     val uiState = _uiState.asStateFlow()
 
-    // Light footprint client setup (No JSON content negotiation plugin needed because we parse lines raw)
-    private val httpClient = HttpClient(Android) {
-        install(HttpTimeout) {
-            requestTimeoutMillis = 60000
-            socketTimeoutMillis = 60000
-        }
-    }
+    private var _showPaywall = MutableStateFlow(false)
+    val showPaywall = _showPaywall.asStateFlow()
 
-    fun updateJobDescription(text: String) {
-        jobDescription = text
-    }
+    fun updateJobDescription(text: String) { _jobDescription.value = text }
+    fun dismissPaywall() { _showPaywall.value = false }
 
     fun onGenerateClicked() {
-        if (jobDescription.isBlank()) return
+        val currentDesc = _jobDescription.value
+        Log.d("CV_DEBUG", "Generate Clicked. Length: ${currentDesc.length}")
 
-        RevenueCatManager.isProUser { isPro ->
-            if (isPro) {
-                executeAiGeneration()
-            } else {
-                _showPaywall.value = true
+        if (currentDesc.isBlank()) return
+
+        // CRITICAL: Ensure we are handling the SDK callback safely
+        try {
+            RevenueCatManager.isProUser { isPro ->
+                // RevenueCat often returns on a background thread.
+                // We MUST use viewModelScope to get back to the Main thread for StateFlow updates.
+                viewModelScope.launch {
+                    Log.d("CV_DEBUG", "RevenueCat callback: isPro = $isPro")
+                    if (isPro) {
+                        executeAiGeneration()
+                    } else {
+                        _showPaywall.value = true
+                    }
+                }
             }
+        } catch (e: Exception) {
+            Log.e("CV_DEBUG", "RevenueCat Crash: ${e.message}")
+            // Fallback: If the billing SDK fails, let the user try the generation anyway
+            // or show an error rather than crashing.
+            executeAiGeneration()
         }
     }
 
@@ -79,94 +81,77 @@ class CoverLetterViewModel @Inject constructor(
         executeAiGeneration()
     }
 
-    fun executeAiGeneration() {
-        if (jobDescription.isBlank()) return
-
+    private fun executeAiGeneration() {
         viewModelScope.launch {
-            _uiState.update {
-                it.copy(isLoading = true, generatedLetter = "", errorMessage = null)
-            }
+            _uiState.update { it.copy(isLoading = true, generatedLetter = "", errorMessage = null) }
+            val currentDesc = _jobDescription.value
 
             try {
-                // Get the current user session token from Supabase Auth
-                val currentSessionToken = supabaseClient.auth.currentAccessTokenOrNull()
-                if (currentSessionToken == null) {
-                    _uiState.update { it.copy(isLoading = false, errorMessage = "User not logged in.") }
-                    return@launch
-                }
+                withContext(Dispatchers.IO) {
+                    Log.d("CV_DEBUG", "Switching to IO Thread")
+                    val session = supabaseClient.auth.currentSessionOrNull()
+                    val token = session?.accessToken
 
-                val payload = mapOf("jobDescription" to jobDescription)
-                val jsonPayload = Json.encodeToString(kotlinx.serialization.serializer(), payload)
-
-                // Point this directly to your deployed Supabase edge function URL
-                val edgeFunctionUrl = "https://your-project-id.supabase.co/functions/v1/generate-cover-letter"
-
-                httpClient.preparePost(edgeFunctionUrl) {
-                    header(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                    // Pass user authentication down to let Supabase verify the request
-                    header(HttpHeaders.Authorization, "Bearer $currentSessionToken")
-                    setBody(jsonPayload)
-                }.execute { httpResponse ->
-
-                    if (httpResponse.status.value == 402) {
-                        _uiState.update { it.copy(isLoading = false, errorMessage = "No credits remaining.") }
-                        _showPaywall.value = true
-                        return@execute
+                    if (token == null) {
+                        Log.e("CV_DEBUG", "No Auth Token")
+                        _uiState.update { it.copy(isLoading = false, errorMessage = "Auth session lost.") }
+                        return@withContext
                     }
 
-                    if (!httpResponse.status.isSuccess()) {
-                        _uiState.update { it.copy(isLoading = false, errorMessage = "Server error: ${httpResponse.status.value}") }
-                        return@execute
-                    }
+                    val url = "https://eocldmwhgovgdhuttwgs.supabase.co/functions/v1/generate-cover-letter"
+                    Log.d("CV_DEBUG", "Preparing Request to: $url")
 
-                    // Read the response pipeline channel stream byte-by-byte
-                    val responseChannel: ByteReadChannel = httpResponse.bodyAsChannel()
+                    httpClient.preparePost(url) {
+                        header(HttpHeaders.ContentType, ContentType.Application.Json)
+                        header(HttpHeaders.Authorization, "Bearer $token")
 
-                    _uiState.update { it.copy(isLoading = false) } // Turn off parent loading indicator as streaming begins
+                        // Stream the body to avoid OOM
+                        setBody(buildString {
+                            append("{\"jobDescription\":")
+                            append(Json.encodeToString(currentDesc))
+                            append("}")
+                        })
 
-                    while (!responseChannel.isClosedForRead) {
-                        val line = responseChannel.readUTF8Line() ?: break
+                        timeout {
+                            requestTimeoutMillis = 60000
+                            connectTimeoutMillis = 60000
+                        }
+                    }.execute { response ->
+                        Log.d("CV_DEBUG", "Response Received: ${response.status}")
 
-                        // Parse standard Server-Sent Events formatting (data: { ... })
-                        if (line.startsWith("data:")) {
-                            val dataChunk = line.removePrefix("data:").trim()
+                        if (!response.status.isSuccess()) {
+                            _uiState.update { it.copy(isLoading = false, errorMessage = "Error: ${response.status.value}") }
+                            return@execute
+                        }
 
-                            if (dataChunk == "[DONE]") break // Groq finishes sending events
+                        val channel = response.bodyAsChannel()
+                        val resultBuilder = StringBuilder()
 
-                            try {
-                                val jsonElement = Json.parseToJsonElement(dataChunk)
-                                val textContent = jsonElement.jsonObject["choices"]
-                                    ?.jsonArray?.firstOrNull()
-                                    ?.jsonObject["delta"]
-                                    ?.jsonObject["content"]
-                                    ?.jsonPrimitive?.content ?: ""
-
-                                // Push single token characters safely down to the UI stream
-                                if (textContent.isNotEmpty()) {
-                                    _uiState.update {
-                                        it.copy(generatedLetter = it.generatedLetter + textContent)
-                                    }
-                                }
-                            } catch (parseException: Exception) {
-                                // Gracefully skip structural noise or empty heartbeats
+                        while (!channel.isClosedForRead) {
+                            val line = channel.readUTF8Line() ?: break
+                            if (line.startsWith("data:")) {
+                                val data = line.removePrefix("data:").trim()
+                                if (data == "[DONE]") break
+                                try {
+                                    val content = Json.parseToJsonElement(data)
+                                        .jsonObject["choices"]?.jsonArray?.get(0)
+                                        ?.jsonObject?.get("delta")
+                                        ?.jsonObject?.get("content")
+                                        ?.jsonPrimitive?.content ?: ""
+                                    resultBuilder.append(content)
+                                } catch (e: Exception) { }
                             }
                         }
+
+                        Log.d("CV_DEBUG", "Streaming Complete")
+                        val finalOut = resultBuilder.toString()
+                        _uiState.update { it.copy(isLoading = false, generatedLetter = finalOut) }
                     }
                 }
-
             } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        errorMessage = e.localizedMessage ?: "Failed to stream cover letter."
-                    )
-                }
+                Log.e("CV_DEBUG", "Exception: ${e.message}", e)
+                _uiState.update { it.copy(isLoading = false, errorMessage = e.message) }
             }
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        httpClient.close()
     }
 }

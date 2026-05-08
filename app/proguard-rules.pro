@@ -22,3 +22,6 @@
 
 -keep class *_HiltModules** { *; }
 -keep class dagger.hilt.** { *; }
+-keepattributes *Annotation*, EnclosingMethod, Signature
+-keepnames class kotlinx.serialization.json.** { *; }
+-keepclassmembers class com.example.cvpilot.features.CoverLetter.CoverLetterUiState { *; }
