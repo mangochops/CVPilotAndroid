@@ -22,6 +22,18 @@ class AuthViewModel @Inject constructor(
     var isSuccess by mutableStateOf(false)
 
 
+    init {
+        // Check if there is an existing session and sync RevenueCat
+        checkExistingSession()
+    }
+
+    private fun checkExistingSession() {
+        viewModelScope.launch {
+            // This ensures that even if the user doesn't hit "Login"
+            // (because they are already logged in), RevenueCat is synced.
+            authService.syncRevenueCatUser()
+        }
+    }
 
     fun onLogin(onSuccess: () -> Unit) {
         viewModelScope.launch {

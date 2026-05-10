@@ -31,6 +31,7 @@ android {
         buildConfigField("String", "SUPABASE_URL", "\"${localProperties.getProperty("SUPABASE_URL") ?: ""}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${localProperties.getProperty("SUPABASE_ANON_KEY") ?: ""}\"")
         buildConfigField("String", "GROQ_API_KEY", "\"${project.properties["GROQ_API_KEY"] ?: ""}\"")
+        buildConfigField("String", "REVENUECAT_KEY", "\"${localProperties.getProperty("REVENUECAT_API_KEY")}\"")
     }
 
     buildTypes {

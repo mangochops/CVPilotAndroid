@@ -109,7 +109,7 @@ fun CoverLetterView(
             }
 
             // --- 3. RESULT STATE ---
-            if (uiState.generatedLetter.isNotEmpty() && !uiState.isLoading) {
+            if (uiState.generatedLetter.isNotEmpty()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),

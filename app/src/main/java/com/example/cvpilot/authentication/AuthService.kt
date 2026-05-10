@@ -6,6 +6,11 @@ import com.example.cvpilot.network.SupabaseManager
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import javax.inject.Inject
+import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.interfaces.LogInCallback
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.CustomerInfo
+import android.util.Log
 
 class AuthService @Inject constructor(){
     private val client = SupabaseManager.client
@@ -16,6 +21,8 @@ class AuthService @Inject constructor(){
                 this.email = email
                 this.password = pass
             }
+            syncRevenueCatUser()
+
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -32,9 +39,28 @@ class AuthService @Inject constructor(){
                     put("full_name", name)
                 }
             }
+
+            syncRevenueCatUser()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+fun syncRevenueCatUser() {
+        val supabaseUserId = client.auth.currentUserOrNull()?.id
+
+        if (supabaseUserId != null) {
+            Purchases.sharedInstance.logIn(
+                newAppUserID = supabaseUserId,
+                callback = object : LogInCallback {
+                    override fun onReceived(customerInfo: CustomerInfo, created: Boolean) {
+                        Log.d("CV_DEBUG", "RevenueCat successfully linked to: $supabaseUserId")
+                    }
+                    override fun onError(error: PurchasesError) {
+                        Log.e("CV_DEBUG", "RevenueCat Login Error: ${error.message}")
+                    }
+                }
+            )
         }
     }
 }

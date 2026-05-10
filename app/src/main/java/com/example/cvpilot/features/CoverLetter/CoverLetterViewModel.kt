@@ -54,25 +54,21 @@ class CoverLetterViewModel @Inject constructor(
 
         if (currentDesc.isBlank()) return
 
-        // CRITICAL: Ensure we are handling the SDK callback safely
-        try {
-            RevenueCatManager.isProUser { isPro ->
-                // RevenueCat often returns on a background thread.
-                // We MUST use viewModelScope to get back to the Main thread for StateFlow updates.
-                viewModelScope.launch {
-                    Log.d("CV_DEBUG", "RevenueCat callback: isPro = $isPro")
-                    if (isPro) {
-                        executeAiGeneration()
-                    } else {
-                        _showPaywall.value = true
-                    }
+        // Show loading state immediately to give feedback to the user
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+
+        RevenueCatManager.isProUser { isPro ->
+            // Force the result to be handled on the Main thread
+            viewModelScope.launch(Dispatchers.Main) {
+                if (isPro) {
+                    Log.d("CV_DEBUG", "Access Granted. Executing AI Generation...")
+                    executeAiGeneration()
+                } else {
+                    Log.d("CV_DEBUG", "Access Denied. Showing Paywall.")
+                    _uiState.update { it.copy(isLoading = false) } // Stop loading if showing paywall
+                    _showPaywall.value = true
                 }
             }
-        } catch (e: Exception) {
-            Log.e("CV_DEBUG", "RevenueCat Crash: ${e.message}")
-            // Fallback: If the billing SDK fails, let the user try the generation anyway
-            // or show an error rather than crashing.
-            executeAiGeneration()
         }
     }
 
@@ -138,14 +134,26 @@ class CoverLetterViewModel @Inject constructor(
                                         ?.jsonObject?.get("delta")
                                         ?.jsonObject?.get("content")
                                         ?.jsonPrimitive?.content ?: ""
-                                    resultBuilder.append(content)
-                                } catch (e: Exception) { }
+
+                                    if (content.isNotEmpty()) {
+                                        resultBuilder.append(content)
+                                        val currentText = resultBuilder.toString()
+
+                                        // Update the UI state
+                                        _uiState.update { it.copy(
+                                            generatedLetter = currentText,
+                                            isLoading = false // Hide Lottie as soon as first word appears
+                                        ) }
+                                    }
+                                    Log.d("CV_DEBUG", "Accumulated Text: $data")
+                                } catch (e: Exception) {
+                                    Log.e("CV_DEBUG", "JSON Parse Error: ${e.message}")
+                                }
                             }
                         }
 
-                        Log.d("CV_DEBUG", "Streaming Complete")
-                        val finalOut = resultBuilder.toString()
-                        _uiState.update { it.copy(isLoading = false, generatedLetter = finalOut) }
+                        Log.d("CV_DEBUG", "Streaming Complete. Final Length: ${resultBuilder.length}")
+                        _uiState.update { it.copy(isLoading = false) }
                     }
                 }
             } catch (e: Exception) {

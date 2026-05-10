@@ -50,13 +50,7 @@ class MainActivity : ComponentActivity() {
                 val rootNavController = rememberNavController()
 
 
-                val authViewModel: AuthViewModel = viewModel(
-                    factory = object : ViewModelProvider.Factory {
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return AuthViewModel(AuthService()) as T
-                        }
-                    }
-                )
+                val authViewModel: AuthViewModel = hiltViewModel()
 
                 NavHost(
                     navController = rootNavController,
