@@ -18,12 +18,14 @@ import com.example.cvpilot.ui.component.ResumeCard
 import com.example.cvpilot.ui.component.LinkedInImportView
 import com.example.cvpilot.ui.component.UploadJobAdView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @Composable
 fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = viewModel() ) {
     var showLinkedInImport by remember { mutableStateOf(false) }
     var showJobAdEntry by remember { mutableStateOf(false) }
 
+    val showPaywall by viewModel.showPaywall.collectAsStateWithLifecycle()
 
     Column(
         modifier = modifier
@@ -111,7 +113,12 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = viewModel(
             onSelectResume = {
                 // You can call your download logic or analysis here
                 showJobAdEntry = false
+            },
+            onShowPaywall = {
+                showJobAdEntry = false // Close the tailor dialog
+                viewModel.triggerPaywall() // Show the RevenueCat overlay
             }
+
         )
     }
 }

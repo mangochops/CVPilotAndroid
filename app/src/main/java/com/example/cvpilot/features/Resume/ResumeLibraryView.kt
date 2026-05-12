@@ -21,11 +21,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.foundation.lazy.items
 import androidx.compose.ui.text.font.FontWeight
 import com.example.cvpilot.models.Resume
+import androidx.hilt.navigation.compose.hiltViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ResumeLibraryView(
     modifier: Modifier = Modifier,
-    viewModel: ResumeViewModel = viewModel()
+    viewModel: ResumeViewModel = hiltViewModel()
     ) {
     // State from ViewModel
     val resumes by viewModel.resumes.collectAsState()

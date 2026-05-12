@@ -27,12 +27,16 @@ import kotlinx.coroutines.launch
 fun UploadJobAdView(
     selectedResumeContent: String,
     onDismiss: () -> Unit,
-    onSelectResume: () -> Unit
+    onSelectResume: () -> Unit,
+    onShowPaywall: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     var jobDetails by remember { mutableStateOf("") }
     var isDownloading by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    // 1. Add Snackbar Host State
+    val snackbarHostState = remember { SnackbarHostState() }
 
     // Lottie Setup
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.ai))
@@ -41,6 +45,7 @@ fun UploadJobAdView(
     val purplePrimary = Color(0xFF7B1FA2)
 
     Scaffold(
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("AI CV Tailor", fontWeight = FontWeight.Bold) },
@@ -87,9 +92,17 @@ fun UploadJobAdView(
                         scope.launch {
                             try {
                                 downloadTailoredResume(context, jobDetails, selectedResumeContent)
+                                snackbarHostState.showSnackbar("Saved to Downloads!")
+                                onDismiss()
+                            } catch (e: Exception) {
+                                // 🔐 PAYWALL CHECK: Handle the 402 from Edge Function
+                                if (e.message?.contains("402") == true || e.message?.contains("PAYWALL") == true) {
+                                    onShowPaywall()
+                                } else {
+                                    snackbarHostState.showSnackbar("Error: ${e.message}")
+                                }
                             } finally {
                                 isDownloading = false
-                                onDismiss()
                             }
                         }
                     },

@@ -15,6 +15,8 @@ import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -31,6 +33,22 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         fetchAndParseResumes()
     }
 
+    private val _showPaywall = MutableStateFlow(false)
+    val showPaywall = _showPaywall.asStateFlow()
+
+    fun triggerPaywall() {
+        _showPaywall.value = true
+    }
+
+    fun dismissPaywall() {
+        _showPaywall.value = false
+    }
+
+    // Optional: Logic to refresh credits after a successful purchase
+    fun onPaywallSuccess() {
+        _showPaywall.value = false
+        // refreshUserCredits()
+    }
     fun fetchAndParseResumes() {
         viewModelScope.launch {
             isLoading = true
