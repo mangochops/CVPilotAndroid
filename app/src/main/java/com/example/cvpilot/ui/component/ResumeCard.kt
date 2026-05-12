@@ -28,15 +28,17 @@ import androidx.compose.material3.Surface
 import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
-fun ResumeCard(name: String, title: String, date: String, content: String) {
+fun ResumeCard(name: String, title: String, date: String, content: String, onClick: () -> Unit) {
     ElevatedCard(
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+                onClick = onClick
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
+
         ) {
             // Icon
             Box(

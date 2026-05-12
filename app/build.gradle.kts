@@ -3,10 +3,12 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
+
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin")
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
 }
 
 android {
@@ -79,6 +81,9 @@ dependencies {
     implementation("io.ktor:ktor-client-android:3.0.1")
     implementation("io.ktor:ktor-client-content-negotiation:3.0.1")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.1")
+    implementation("io.github.jan-tennert.supabase:functions-kt:3.0.1")
+
+    implementation("androidx.compose.runtime:runtime:1.7.0")
 
     // UI & RevenueCat
     implementation("com.revenuecat.purchases:purchases:8.4.0")

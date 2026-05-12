@@ -52,7 +52,13 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = viewModel(
         // Action Cards (Logic for clicking can be added via lambdas)
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             ActionCard("Edit Primary CV", "Store your master resume", Icons.Default.ContactPage, Color(0xFF2196F3),onClick = { TODO() })
-            ActionCard("Tailor CV for Job", "Paste job link or upload PDF", Icons.Default.AutoAwesome, Color(0xFF9C27B0), onClick = { showJobAdEntry = true })
+            ActionCard("Tailor CV for Job", "Paste job link or upload PDF", Icons.Default.AutoAwesome, Color(0xFF9C27B0), onClick = {
+                // Optional: Default to the first resume if one exists
+                if (viewModel.resumes.isNotEmpty() && viewModel.selectedResumeFullText.isEmpty()) {
+                    viewModel.selectedResumeFullText = viewModel.resumes.first().content
+                }
+                showJobAdEntry = true
+            })
             ActionCard("Import from LinkedIn", "Upload LinkedIn profile PDF", Icons.Default.Link, Color(0xFF4CAF50), onClick = { showLinkedInImport = true })
         }
 
@@ -72,7 +78,14 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = viewModel(
                         name = resume.name,
                         title = "Tailored CV",
                         date = resume.date,
-                        content = resume.content // This now shows the actual PDF text
+                        content = resume.content, // This now shows the actual PDF text
+                        onClick = {
+                            // 1. Store the selected resume content in the ViewModel
+                            viewModel.selectedResumeFullText = resume.content
+
+                            // 2. Open the Tailor UI
+                            showJobAdEntry = true
+                        }
                     )
                 }
             }
@@ -91,7 +104,14 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = viewModel(
 
     if (showJobAdEntry) {
         UploadJobAdView(
-            onDismiss = { showJobAdEntry = false }
+            // 1. Pass the text currently stored in the ViewModel
+            selectedResumeContent = viewModel.selectedResumeFullText,
+            onDismiss = { showJobAdEntry = false },
+            // 2. Provide a lambda for onAnalyze (even if it just closes the view for now)
+            onSelectResume = {
+                // You can call your download logic or analysis here
+                showJobAdEntry = false
+            }
         )
     }
 }

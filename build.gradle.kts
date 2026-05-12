@@ -5,4 +5,5 @@ plugins {
     alias(deps.plugins.hilt.android) apply false
     alias(deps.plugins.google.devtools.ksp) apply false
     id("com.google.android.libraries.mapsplatform.secrets-gradle-plugin") version "2.0.1" apply false
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21" apply false
 }

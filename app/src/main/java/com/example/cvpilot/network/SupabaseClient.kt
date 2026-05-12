@@ -8,6 +8,12 @@ import io.github.jan.supabase.auth.auth // Use . not -
 import kotlinx.serialization.Serializable
 import java.util.Date
 import com.example.cvpilot.BuildConfig
+import io.github.jan.supabase.annotations.SupabaseInternal
+import io.github.jan.supabase.functions.Functions
+import io.github.jan.supabase.serializer.KotlinXSerializer
+import kotlinx.serialization.json.Json
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
 
 
 // 1. Define your Data Model for Supabase
@@ -28,6 +34,7 @@ object SupabaseManager {
     private const val URL = BuildConfig.SUPABASE_URL
     private const val ANON_KEY = BuildConfig.SUPABASE_ANON_KEY // Use your full key here
 
+    @OptIn(SupabaseInternal::class)
     val client = createSupabaseClient(
         supabaseUrl = URL,
         supabaseKey = ANON_KEY
@@ -35,6 +42,24 @@ object SupabaseManager {
         install(Postgrest)
         install(Auth)
         install(io.github.jan.supabase.storage.Storage)
+        install(Functions)
+
+        // Configure Ktor HTTP client with ContentNegotiation
+        httpConfig {
+            install(ContentNegotiation) {
+                json(Json {
+                    ignoreUnknownKeys = true
+                    explicitNulls = false
+                    encodeDefaults = true
+                })
+            }
+        }
+
+        defaultSerializer = KotlinXSerializer(Json {
+            ignoreUnknownKeys = true
+            explicitNulls = false
+            encodeDefaults = true
+        })
     }
 
     /**
