@@ -19,9 +19,11 @@ import com.example.cvpilot.ui.component.LinkedInImportView
 import com.example.cvpilot.ui.component.UploadJobAdView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.hilt.navigation.compose.hiltViewModel
+
 
 @Composable
-fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = viewModel() ) {
+fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewModel() ) {
     var showLinkedInImport by remember { mutableStateOf(false) }
     var showJobAdEntry by remember { mutableStateOf(false) }
 
@@ -56,8 +58,8 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = viewModel(
             ActionCard("Edit Primary CV", "Store your master resume", Icons.Default.ContactPage, Color(0xFF2196F3),onClick = { TODO() })
             ActionCard("Tailor CV for Job", "Paste job link or upload PDF", Icons.Default.AutoAwesome, Color(0xFF9C27B0), onClick = {
                 // Optional: Default to the first resume if one exists
-                if (viewModel.resumes.isNotEmpty() && viewModel.selectedResumeFullText.isEmpty()) {
-                    viewModel.selectedResumeFullText = viewModel.resumes.first().content
+                if (viewModel.recentResumes.isNotEmpty() && viewModel.selectedResumeFullText.isEmpty()) {
+                    viewModel.selectedResumeFullText = viewModel.recentResumes.first().content ?: ""
                 }
                 showJobAdEntry = true
             })
@@ -66,29 +68,37 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = viewModel(
 
         // Recent Resumes Section
         Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text(
-                text = "Generated Resumes",
-                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Recent Generations",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                )
+                TextButton(onClick = { /* Navigate to Library */ }) {
+                    Text("See All")
+                }
+            }
             // Replace with your actual list logic
             // Inside HomeView.kt
             if (viewModel.isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            } else if (viewModel.recentResumes.isEmpty()) {
+                Text("No generations yet. Try tailoring a CV!", color = Color.Gray)
             } else {
-                viewModel.resumes.forEach { resume ->
-                    ResumeCard(
-                        name = resume.name,
-                        title = "Tailored CV",
-                        date = resume.date,
-                        content = resume.content, // This now shows the actual PDF text
-                        onClick = {
-                            // 1. Store the selected resume content in the ViewModel
-                            viewModel.selectedResumeFullText = resume.content
-
-                            // 2. Open the Tailor UI
-                            showJobAdEntry = true
-                        }
-                    )
+                viewModel.recentResumes.forEach { resume ->
+                    key(resume.id) { // key helps performance and prevents state loss
+                        ResumeCard(
+                            resume = resume,
+                            onClick = {
+                                // Logic to select this resume for tailoring
+                                viewModel.selectedResumeFullText = resume.content ?: ""
+                                showJobAdEntry = true
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -121,6 +131,7 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = viewModel(
 
         )
     }
+
 }
 
 @Composable

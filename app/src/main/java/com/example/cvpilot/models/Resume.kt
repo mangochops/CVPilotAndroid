@@ -1,11 +1,21 @@
 package com.example.cvpilot.models
 
-import java.util.Date
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Resume(
-    val id: String = java.util.UUID.randomUUID().toString(),
+    val id: String? = null,
+
+    @SerialName("user_id") // Maps Kotlin userId to DB user_id
+    val userId: String,
+
     val title: String,
-    val name: String,
-    val publicUrl: String,
-    val createdAt: Date = Date()
+
+    @SerialName("file_url") // Maps Kotlin fileUrl to DB file_url
+    val fileUrl: String?,
+
+    val name: String = "", // Add this if you want to store the filename
+
+    val content: String? = null // Your schema uses jsonb/text for content
 )

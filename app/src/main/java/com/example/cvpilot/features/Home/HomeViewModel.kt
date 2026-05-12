@@ -2,127 +2,53 @@ package com.example.cvpilot.features.Home
 
 import android.app.Application
 import android.util.Log
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cvpilot.models.Resume // Use your standard Resume model
 import com.example.cvpilot.network.SupabaseManager
-import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
-import com.tom_roush.pdfbox.pdmodel.PDDocument
-import com.tom_roush.pdfbox.text.PDFTextStripper
-import io.github.jan.supabase.storage.storage
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
 
-    var resumes by mutableStateOf<List<ResumeData>>(emptyList())
-    var isLoading by mutableStateOf(true)
-    var errorMessage by mutableStateOf<String?>(null)
+    // Now uses the database model 'Resume' instead of 'ResumeData'
+    var recentResumes by mutableStateOf<List<Resume>>(emptyList())
+        private set
+    var isLoading by mutableStateOf(false)
+        private set
 
-    // This holds the full text of the resume currently being "Targeted"
     var selectedResumeFullText by mutableStateOf("")
-    var isExtractingFullText by mutableStateOf(false)
-
-    init {
-        PDFBoxResourceLoader.init(getApplication())
-        fetchAndParseResumes()
-    }
 
     private val _showPaywall = MutableStateFlow(false)
     val showPaywall = _showPaywall.asStateFlow()
 
-    fun triggerPaywall() {
-        _showPaywall.value = true
+    init {
+        fetchRecentGenerations()
     }
 
-    fun dismissPaywall() {
-        _showPaywall.value = false
-    }
-
-    // Optional: Logic to refresh credits after a successful purchase
-    fun onPaywallSuccess() {
-        _showPaywall.value = false
-        // refreshUserCredits()
-    }
-    fun fetchAndParseResumes() {
+    fun fetchRecentGenerations() {
         viewModelScope.launch {
             isLoading = true
-            errorMessage = null
             try {
-                val bucket = SupabaseManager.client.storage.from("resumes")
-                val files = bucket.list()
-
-                resumes = files.map { file ->
-                    val summary = if (file.name.lowercase().endsWith(".pdf")) {
-                        extractSummary(file.name)
-                    } else {
-                        "Preview unavailable"
+                // Query DB table directly - much faster than storage listing
+                recentResumes = SupabaseManager.client.from("resumes")
+                    .select {
+                        order("created_at", order = Order.DESCENDING)
+                        limit(5)
                     }
-
-                    ResumeData(
-                        name = file.name,
-                        date = file.createdAt.toString().split("T")[0], // Cleaner date
-                        content = summary
-                    )
-                }
+                    .decodeList<Resume>()
             } catch (e: Exception) {
-                errorMessage = "Failed to load resumes: ${e.localizedMessage}"
-                Log.e("HOME_VM", "Error fetching resumes", e)
+                Log.e("HOME_VM", "Error fetching from DB: ${e.message}")
             } finally {
                 isLoading = false
             }
         }
     }
 
-    private suspend fun extractSummary(fileName: String): String = withContext(Dispatchers.IO) {
-        try {
-            val bytes = SupabaseManager.client.storage.from("resumes").downloadPublic(fileName)
-            PDDocument.load(bytes).use { document ->
-                val stripper = PDFTextStripper().apply {
-                    startPage = 1
-                    endPage = 1
-                    sortByPosition = true
-                }
-                val text = stripper.getText(document)
-                text.take(150).replace("\n", " ").trim() + "..."
-            }
-        } catch (e: Exception) {
-            "No preview available"
-        }
-    }
-
-    /**
-     * Call this when the user clicks on a resume card to prepare it for tweaking.
-     */
-    fun selectResumeAndExtractText(fileName: String, onComplete: () -> Unit) {
-        viewModelScope.launch {
-            isExtractingFullText = true
-            try {
-                val text = withContext(Dispatchers.IO) {
-                    val bytes = SupabaseManager.client.storage.from("resumes").downloadPublic(fileName)
-                    PDDocument.load(bytes).use { document ->
-                        PDFTextStripper().getText(document)
-                    }
-                }
-                selectedResumeFullText = text
-                onComplete() // Callback to navigate to UploadJobAdView
-            } catch (e: Exception) {
-                errorMessage = "Could not read resume content."
-                Log.e("HOME_VM", "Full text extraction failed", e)
-            } finally {
-                isExtractingFullText = false
-            }
-        }
-    }
+    fun triggerPaywall() = viewModelScope.launch { _showPaywall.value = true }
+    fun dismissPaywall() = viewModelScope.launch { _showPaywall.value = false }
 }
-
-data class ResumeData(
-    val name: String,
-    val date: String,
-    val content: String
-)

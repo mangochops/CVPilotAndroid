@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import io.github.jan.supabase.auth.auth
 
 @HiltViewModel
 class ResumeViewModel @Inject constructor(
@@ -63,6 +64,23 @@ class ResumeViewModel @Inject constructor(
                 val bucket = supabaseClient.storage.from("resumes")
 
                 bucket.upload(path = fileName, data = bytes)
+
+                val publicUrl = bucket.publicUrl(fileName)
+
+                val currentUserId = supabaseClient.auth.currentUserOrNull()?.id
+                    ?: throw Exception("User not authenticated")
+
+                // 4. Create the Database Record
+                // Note: Ensure your Resume model matches the DB columns (user_id, file_url, etc.)
+                val newResume = Resume(
+                    userId = currentUserId,
+                    title = "My Uploaded Resume",
+                    fileUrl = publicUrl,
+                    name = fileName, // Fixed: Added missing 'name' parameter
+                    content = ""     // Fixed: Use empty string instead of null if needed
+                )
+
+                supabaseClient.from("resumes").insert(newResume)
 
                 fetchResumes()
             } catch (e: Exception) {

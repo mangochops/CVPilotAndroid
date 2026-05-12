@@ -26,13 +26,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.shape.RoundedCornerShape
+import com.example.cvpilot.models.Resume
 
 @Composable
-fun ResumeCard(name: String, title: String, date: String, content: String, onClick: () -> Unit) {
+fun ResumeCard(resume: Resume, onClick: () -> Unit) {
     ElevatedCard(
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth(),
-                onClick = onClick
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -51,19 +52,32 @@ fun ResumeCard(name: String, title: String, date: String, content: String, onCli
             }
 
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(date, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                Text(name, fontWeight = FontWeight.Bold, maxLines = 1)
+                Text(
+                    text = resume.name.ifEmpty { "Untitled Resume" },
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
                 Surface(
                     color = Color(0xFFE3F2FD),
                     shape = CircleShape
                 ) {
-                    Text(title, modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
-                        style = MaterialTheme.typography.labelMedium, color = Color(0xFF2196F3))
+                    Text(
+                        text = resume.title,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color(0xFF2196F3)
+                    )
                 }
 
-                Text(content, style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(
+                    text = resume.content?.takeIf { it.isNotBlank() } ?: "No content preview available",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
 
             Icon(Icons.Default.ChevronRight, null, tint = Color.LightGray)
