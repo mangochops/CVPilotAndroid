@@ -20,6 +20,13 @@ import com.example.cvpilot.ui.component.UploadJobAdView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.cvpilot.ui.component.animatedGradientBrush
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.horizontalScroll
+import com.example.cvpilot.ui.component.CompactCoverLetterCard
+import com.example.cvpilot.ui.component.CompactResumeCard
+import android.util.Log
 
 
 @Composable
@@ -28,6 +35,11 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
     var showJobAdEntry by remember { mutableStateOf(false) }
 
     val showPaywall by viewModel.showPaywall.collectAsStateWithLifecycle()
+
+    val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
+    val credits by viewModel.userCredits.collectAsStateWithLifecycle()
+
+    val animatedBrush = animatedGradientBrush()
 
     Column(
         modifier = modifier
@@ -38,20 +50,7 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
         verticalArrangement = Arrangement.spacedBy(30.dp)
     ) {
         // Header
-        Column(modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = "Get More Interviews",
-                style = MaterialTheme.typography.headlineLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 32.sp
-                )
-            )
-            Text(
-                text = "Tailor your resume to every job using AI",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.secondary
-            )
-        }
+        HeaderSection(userProfile?.firstName ?: "Willi", credits, animatedBrush)
 
         // Action Cards (Logic for clicking can be added via lambdas)
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -67,35 +66,76 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
         }
 
         // Recent Resumes Section
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Recent Generations",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
-                )
-                TextButton(onClick = { /* Navigate to Library */ }) {
-                    Text("See All")
-                }
+        // --- Recent Resumes Section ---
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            SectionHeader(title = "Recent Resumes") {
+                // TODO: Navigate to full Library view
             }
-            // Replace with your actual list logic
-            // Inside HomeView.kt
+
             if (viewModel.isLoading) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                // Use a more premium looking indicator or skeleton loaders here
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
             } else if (viewModel.recentResumes.isEmpty()) {
-                Text("No generations yet. Try tailoring a CV!", color = Color.Gray)
+                Text(
+                    "No generations yet. Try tailoring a CV!",
+                    color = Color.Gray,
+                    modifier = Modifier.padding(16.dp)
+                )
             } else {
-                viewModel.recentResumes.forEach { resume ->
-                    key(resume.id) { // key helps performance and prevents state loss
-                        ResumeCard(
+                // This is the fix: Wrap your list in the HorizontalList component
+                HorizontalList(items = viewModel.recentResumes) { resume ->
+                    key(resume.id) {
+                        CompactResumeCard(
                             resume = resume,
                             onClick = {
-                                // Logic to select this resume for tailoring
+                                // Keep your logic for selecting the resume
                                 viewModel.selectedResumeFullText = resume.content ?: ""
                                 showJobAdEntry = true
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        // --- Recent Cover Letters Section ---
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp) // Slightly tighter spacing for premium feel
+        ) {
+            SectionHeader(title = "Recent Cover Letters") {
+                // Navigate to full library
+            }
+
+            // Logic to handle empty vs loaded states
+            if (viewModel.isLoading) {
+                // Show a horizontal skeleton or a simple indicator
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                )
+            } else if (viewModel.recentCoverLetters.isEmpty()) {
+                Text(
+                    "Your generated letters will appear here.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            } else {
+                // Using the HorizontalList component for swipeable cards
+                HorizontalList(items = viewModel.recentCoverLetters) { letter ->
+                    key(letter.id) {
+                        CompactCoverLetterCard(
+                            letter = letter,
+                            onClick = {
+                                // Click logic: Open the full letter view or copy text
+                                Log.d("UI", "Selected letter for ${letter.companyName}")
                             }
                         )
                     }
@@ -153,6 +193,88 @@ fun ActionCard(title: String, subtitle: String, icon: androidx.compose.ui.graphi
             Spacer(Modifier.weight(1f))
             Icon(Icons.Default.ChevronRight, contentDescription = null)
         }
+    }
+}
+
+@Composable
+fun SectionHeader(title: String, onSeeAll: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = (-0.5).sp
+            )
+        )
+        TextButton(onClick = onSeeAll) {
+            Text("See All", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun HeaderSection(name: String, credits: Int, brush: androidx.compose.ui.graphics.Brush) {
+    val greeting = remember {
+        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+        when (hour) {
+            in 0..11 -> "Good Morning,"
+            in 12..16 -> "Good Afternoon,"
+            in 17..20 -> "Good Evening,"
+            else -> "Good Night,"
+        }
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column {
+            Text(greeting, style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
+            Text(
+                text = name,
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Black,
+                    brush = brush,
+                    fontSize = 38.sp
+                )
+            )
+        }
+
+        // Credits Badge
+        Surface(
+            color = Color(0xFF1A1A1A), // Dark premium feel
+            shape = RoundedCornerShape(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Token, null, tint = Color(0xFFFFD700), modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("$credits", color = Color.White, fontWeight = FontWeight.Bold)
+            }
+        }
+    }
+}
+
+@Composable
+fun <T> HorizontalList(items: List<T>, content: @Composable (T) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            // padding only on the ends of the scrollable area
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        items.forEach { content(it) }
+        // Add a spacer at the end so the last card doesn't stick to the edge
+        Spacer(modifier = Modifier.width(16.dp))
     }
 }
 
