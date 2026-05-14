@@ -13,6 +13,10 @@ import androidx.compose.ui.unit.dp
 import com.airbnb.lottie.compose.*
 import com.example.cvpilot.R
 import androidx.hilt.navigation.compose.hiltViewModel
+import io.github.jan.supabase.compose.auth.composable.rememberSignInWithGoogle
+import io.github.jan.supabase.compose.auth.composable.rememberSignInWithApple
+import io.github.jan.supabase.compose.auth.composeAuth
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun SignUpView(
@@ -119,6 +123,32 @@ fun SignUpView(
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
                     } else {
                         Text("Sign Up")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("OR", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Google Button
+                    OutlinedButton(
+                        onClick = { viewModel.onSignInWithGoogle() }, // Call your VM function
+                        modifier = Modifier.weight(1f).height(50.dp)
+                    ) {
+                        // You can add a Google Icon here
+                        Text("Google")
+                    }
+
+                    // Apple Button
+                    OutlinedButton(
+                        onClick = { viewModel.onSignInWithApple() }, // Call your VM function
+                        modifier = Modifier.weight(1f).height(50.dp)
+                    ) {
+                        Text("Apple")
                     }
                 }
 

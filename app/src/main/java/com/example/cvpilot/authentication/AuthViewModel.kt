@@ -8,6 +8,8 @@ import androidx.lifecycle.viewModelScope // Required for viewModelScope
 import kotlinx.coroutines.launch // Required for launch
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import io.github.jan.supabase.auth.providers.Apple
+import io.github.jan.supabase.auth.providers.Google
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
@@ -61,6 +63,26 @@ class AuthViewModel @Inject constructor(
                 isSuccess = true
             }.onFailure {
                 errorMessage = it.localizedMessage ?: "Signup failed"
+            }
+        }
+    }
+
+    fun onSignInWithGoogle() {
+        viewModelScope.launch {
+            try {
+                authService.signInWithSocial(Google)
+            } catch (e: Exception) {
+                errorMessage = e.localizedMessage
+            }
+        }
+    }
+
+    fun onSignInWithApple() {
+        viewModelScope.launch {
+            try {
+                authService.signInWithSocial(Apple)
+            } catch (e: Exception) {
+                errorMessage = e.localizedMessage
             }
         }
     }

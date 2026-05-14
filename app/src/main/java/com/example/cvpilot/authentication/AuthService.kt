@@ -11,6 +11,7 @@ import com.revenuecat.purchases.interfaces.LogInCallback
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.CustomerInfo
 import android.util.Log
+import io.github.jan.supabase.auth.providers.AuthProvider
 
 class AuthService @Inject constructor(){
     private val client = SupabaseManager.client
@@ -46,7 +47,18 @@ class AuthService @Inject constructor(){
             Result.failure(e)
         }
     }
-fun syncRevenueCatUser() {
+
+    suspend fun signInWithSocial(provider: AuthProvider<*, *>): Result<Unit> {
+        return try {
+            // This triggers the external browser flow
+            client.auth.signInWith(provider)
+            syncRevenueCatUser()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    fun syncRevenueCatUser() {
         val supabaseUserId = client.auth.currentUserOrNull()?.id
 
         if (supabaseUserId != null) {

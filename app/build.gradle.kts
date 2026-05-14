@@ -82,6 +82,7 @@ dependencies {
     implementation("io.ktor:ktor-client-content-negotiation:3.0.1")
     implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.1")
     implementation("io.github.jan-tennert.supabase:functions-kt:3.0.1")
+    implementation("io.github.jan-tennert.supabase:compose-auth:3.0.1")
 
     implementation("androidx.compose.runtime:runtime:1.7.0")
 
