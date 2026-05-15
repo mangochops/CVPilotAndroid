@@ -4,7 +4,6 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -12,12 +11,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.DocumentScanner
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,7 +27,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.cvpilot.models.CoverLetter
 import com.example.cvpilot.models.Resume
 import com.example.cvpilot.ui.component.animatedGradientBrush
 
@@ -54,21 +51,43 @@ fun ResumeLibraryView(
         uri?.let { viewModel.uploadResumeToSupabase(it) }
     }
 
+    // Use MaterialTheme colors instead of hardcoded dark colors
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val primaryColor = MaterialTheme.colorScheme.primary
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color(0xFF0D0D0D)) // Match deep dark premium theme
+            .background(backgroundColor) // Match deep dark premium theme
             .padding(top = 24.dp)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
 
             // Premium Header Layout
-            LibraryHeader(animatedBrush)
+            LibraryHeader(animatedBrush, onSurfaceColor = onSurfaceColor)
+
+
+
+            // Primary Resume Section (Stays static at the top when Resumes tab is active)
+            if (selectedTab == LibraryTab.RESUMES) {
+                PrimaryResumeSection(
+                    resumes = resumes,
+                    onUploadClick = { launcher.launch("application/pdf") },
+                    surfaceColor = surfaceColor,
+                    onSurfaceColor = onSurfaceColor,
+                    onSurfaceVariant = onSurfaceVariant
+                )
+            }
 
             // Custom Segmented Control/Toggle Group
             PremiumSegmentedPicker(
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it }
+                onTabSelected = { selectedTab = it },
+                surfaceColor = surfaceColor,
+                onSurfaceColor = onSurfaceColor
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -90,7 +109,9 @@ fun ResumeLibraryView(
                                         subtitle = resume.name,
                                         dateText = "Updated recently", // Replace with raw date string if available
                                         isResume = true,
-                                        onClick = { /* Open Resume Details */ }
+                                        onClick = { /* Open Resume Details */ },
+                                        onSurfaceColor = onSurfaceColor,
+                                        primaryColor = primaryColor
                                     )
                                 }
                             }
@@ -110,7 +131,9 @@ fun ResumeLibraryView(
                                         subtitle = letter.jobTitle ?: "Job Application",
                                         dateText = "Created recently",
                                         isResume = false,
-                                        onClick = { /* Open Letter Details */ }
+                                        onClick = { /* Open Letter Details */ },
+                                        onSurfaceColor = onSurfaceColor,
+                                        primaryColor = primaryColor
                                     )
                                 }
                             }
@@ -142,7 +165,7 @@ fun ResumeLibraryView(
 }
 
 @Composable
-fun LibraryHeader(brush: Brush) {
+fun LibraryHeader(brush: Brush, onSurfaceColor: Color) {
     Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 12.dp)) {
         Text("Your Content", style = MaterialTheme.typography.bodyLarge, color = Color.Gray)
         Text(
@@ -157,16 +180,97 @@ fun LibraryHeader(brush: Brush) {
 }
 
 @Composable
+fun PrimaryResumeSection(resumes: List<Resume>, onUploadClick: () -> Unit,
+                         surfaceColor: Color,
+                         onSurfaceColor: Color,
+                         onSurfaceVariant: Color) {
+    // Finds the first resume or treats it as the default base file
+    val primaryResume = resumes.firstOrNull()
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 8.dp)
+    ) {
+        Text(
+            text = "PRIMARY CV",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = onSurfaceVariant,
+            letterSpacing = 1.5.sp,
+            modifier = Modifier.padding(bottom = 8.dp, start = 4.dp)
+        )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = surfaceColor),
+            border = BorderStroke(1.dp, Color(0xFF2E2E2E))
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(
+                    color = Color(0xFF22252A),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.size(44.dp),
+//                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Color(0xFFFFD700), // Gold Star for Primary Status
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = primaryResume?.title ?: "No Master CV Set",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        fontSize = 16.sp
+                    )
+                    Text(
+                        text = primaryResume?.name ?: "Upload your master copy base file",
+                        color = Color.Gray,
+                        fontSize = 13.sp
+                    )
+                }
+
+                if (primaryResume == null) {
+                    Button(
+                        onClick = onUploadClick,
+                        colors = ButtonDefaults.buttonColors(containerColor = onSurfaceColor.copy(alpha = 0.1f)),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Setup", color = onSurfaceColor, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun PremiumSegmentedPicker(
     selectedTab: LibraryTab,
-    onTabSelected: (LibraryTab) -> Unit
+    onTabSelected: (LibraryTab) -> Unit,
+    surfaceColor: Color,
+    onSurfaceColor: Color
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 8.dp)
             .height(54.dp)
-            .background(Color(0xFF161616), RoundedCornerShape(28.dp))
+            .background(surfaceColor.copy(alpha = 0.5f), RoundedCornerShape(28.dp))
             .padding(4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -207,7 +311,9 @@ fun PremiumLibraryCard(
     subtitle: String,
     dateText: String,
     isResume: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    primaryColor: Color,
+    onSurfaceColor: Color
 ) {
     Card(
         modifier = Modifier

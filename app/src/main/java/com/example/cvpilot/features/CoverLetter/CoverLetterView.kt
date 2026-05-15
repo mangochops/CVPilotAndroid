@@ -1,256 +1,286 @@
 package com.example.cvpilot.features.CoverLetter
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.TextSnippet
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.filled.AutoAwesome // If using standard
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.cvpilot.paywall.RevenueCatPaywall
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.cvpilot.ui.component.StreamingText
-import androidx.compose.runtime.getValue
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.cvpilot.R
-import com.airbnb.lottie.compose.LottieConstants
-import com.airbnb.lottie.compose.animateLottieCompositionAsState
-import com.airbnb.lottie.compose.LottieCompositionSpec
-import com.airbnb.lottie.compose.rememberLottieComposition
-import com.airbnb.lottie.compose.LottieAnimation
-import androidx.compose.foundation.text.selection.SelectionContainer
-
+import androidx.compose.ui.unit.sp
+import com.example.cvpilot.ui.component.animatedGradientBrush
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CoverLetterView(
-    modifier: Modifier = Modifier,
-    viewModel: CoverLetterViewModel = hiltViewModel()
+    modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val jobDescription by viewModel.jobDescription.collectAsStateWithLifecycle() // Unwraps StateFlow<String>
-    val showPaywall by viewModel.showPaywall.collectAsStateWithLifecycle()     // Unwraps StateFlow<Boolean>
+    val animatedBrush = animatedGradientBrush()
 
-    // Lottie Animation Setup
-    val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.ai))
-    val progress by animateLottieCompositionAsState(
-        composition = composition,
-        iterations = LottieConstants.IterateForever
-    )
+    // Consistent material colors mapping
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val outlineVariant = MaterialTheme.colorScheme.outlineVariant
 
     Scaffold(
         topBar = {
             LargeTopAppBar(
-                title = { Text("AI Tools") }
+                title = {
+                    Text(
+                        text = "AI Workspace",
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Black,
+                            letterSpacing = (-0.5).sp
+                        )
+                    )
+                },
+                colors = TopAppBarDefaults.largeTopAppBarColors(
+                    containerColor = backgroundColor,
+                    titleContentColor = onSurfaceColor
+                )
             )
-        }
+        },
+        containerColor = backgroundColor
     ) { innerPadding ->
         Column(
             modifier = modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .verticalScroll(scrollState)
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // --- 1. INPUT STATE ---
-            if (!uiState.isLoading && uiState.generatedLetter.isEmpty()) {
-                JobDescriptionCard(
-                    text = jobDescription,
-                    onValueChange = { viewModel.updateJobDescription(it) }
+
+            // Subtitle status line
+            Text(
+                text = "Select an optimized agent to improve your professional application documents.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = onSurfaceVariant
+            )
+
+            // --- SECTION 1: CORE ENGINE POWER GRID ---
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "CORE ENGINES",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurfaceVariant,
+                    letterSpacing = 1.5.sp
                 )
 
-                Button(
-                    onClick = { viewModel.onGenerateClicked() },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(54.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    enabled =jobDescription.isNotBlank(),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Generate with AI")
-                }
-            }
-
-            // --- 2. LOADING STATE ---
-            if (uiState.isLoading) {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 40.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    LottieAnimation(
-                        composition = composition,
-                        progress = { progress },
-                        modifier = Modifier.size(240.dp)
+                    GridToolCard(
+                        title = "Tailor Resume",
+                        description = "Align experiences with an active job description text copy.",
+                        icon = Icons.Default.AutoAwesome,
+                        iconTint = Color(0xFF9C27B0),
+                        backgroundColor = Color(0xFF9C27B0).copy(alpha = 0.08f),
+                        outlineVariant = outlineVariant,
+                        modifier = Modifier.weight(1f),
+                        onClick = { /* Open Tailor Flow */ }
                     )
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        "AI is crafting your letter...",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary
+
+                    GridToolCard(
+                        title = "Cover Letter",
+                        description = "Draft contextual application statements from standard requirements.",
+                        icon = Icons.Default.Link,
+                        iconTint = Color(0xFF4CAF50),
+                        backgroundColor = Color(0xFF4CAF50).copy(alpha = 0.08f),
+                        outlineVariant = outlineVariant,
+                        modifier = Modifier.weight(1f),
+                        onClick = { /* Open Letter Flow */ }
                     )
                 }
             }
 
-            // --- 3. RESULT STATE ---
-            if (uiState.generatedLetter.isNotEmpty()) {
+            // --- SECTION 2: INDIVIDUAL OPTIMIZERS ---
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = "RESUME OPTIMIZATION UTILITIES",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = onSurfaceVariant,
+                    letterSpacing = 1.5.sp,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-                    )
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = surfaceColor),
+                    border = BorderStroke(1.dp, outlineVariant)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Generated Cover Letter", fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(8.dp))
-                        SelectionContainer {
-                            Text(
-                                text = uiState.generatedLetter,
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
+                    Column {
+                        ListToolItem(
+                            title = "Rewrite Resume Bullet",
+                            subtitle = "Enhance responsibility syntax using strong impact verbs.",
+                            icon = Icons.Default.Edit,
+                            iconContainerColor = Color(0xFF1E293B),
+                            iconTint = Color(0xFF38BDF8),
+                            onSurfaceColor = onSurfaceColor,
+                            onSurfaceVariant = onSurfaceVariant,
+                            onClick = { /* Tool action */ }
+                        )
+                        HorizontalDivider(color = outlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(horizontal = 16.dp))
+                        ListToolItem(
+                            title = "Improve Professional Summary",
+                            subtitle = "Structure high-level personal value declarations.",
+                            icon = Icons.Default.Notes,
+                            iconContainerColor = Color(0xFF2E1065),
+                            iconTint = Color(0xFFC084FC),
+                            onSurfaceColor = onSurfaceColor,
+                            onSurfaceVariant = onSurfaceVariant,
+                            onClick = { /* Tool action */ }
+                        )
+                        HorizontalDivider(color = outlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(horizontal = 16.dp))
+                        ListToolItem(
+                            title = "Analyze Job Match Rating",
+                            subtitle = "Benchmark resume keyword data matrices against active adverts.",
+                            icon = Icons.Default.BarChart,
+                            iconContainerColor = Color(0xFF064E3B),
+                            iconTint = Color(0xFF34D399),
+                            onSurfaceColor = onSurfaceColor,
+                            onSurfaceVariant = onSurfaceVariant,
+                            onClick = { /* Tool action */ }
+                        )
                     }
                 }
-
-                OutlinedButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    onClick = { viewModel.updateJobDescription("") },
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Icon(Icons.Default.Refresh, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Start Over")
-                }
             }
 
-            // --- 4. PERSISTENT TOOLS ---
-            if (!uiState.isLoading) {
-                QuickToolsSection()
-            }
-        } // End of Column
-
-        // Paywall Logic
-        if (showPaywall) {
-            RevenueCatPaywall(
-                onDismiss = { viewModel.dismissPaywall() },
-                onSuccess = { viewModel.onPaywallSuccess() }
-            )
+            Spacer(modifier = Modifier.height(40.dp))
         }
-    } // End of Scaffold
-} // End of CoverLetterView function
-
-            // Live Output Card
-//            if (uiState.generatedLetter.isNotEmpty() || uiState.isLoading) {
-//                Card(
-//                    modifier = Modifier.fillMaxWidth(),
-//                    shape = RoundedCornerShape(16.dp),
-//                    colors = CardDefaults.cardColors(
-//                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
-//                    )
-//                ) {
-//                    Column(modifier = Modifier.padding(16.dp)) {
-//                        Text(
-//                            text = "Generated Cover Letter",
-//                            style = MaterialTheme.typography.titleMedium,
-//                            fontWeight = FontWeight.Bold
-//                        )
-//                        Spacer(modifier = Modifier.height(8.dp))
-//                        StreamingText(uiState.generatedLetter, uiState.isLoading)
-//                    }
-//                }
-//            }
-
-            // Quick Tools Section
-
-
-
-
-
+    }
+}
 
 @Composable
-fun JobDescriptionCard(text: String, onValueChange: (String) -> Unit) {
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-        modifier = Modifier.fillMaxWidth()
+fun GridToolCard(
+    title: String,
+    description: String,
+    icon: ImageVector,
+    iconTint: Color,
+    backgroundColor: Color,
+    outlineVariant: Color,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = modifier
+            .height(170.dp)
+            .clickable { onClick() },
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, outlineVariant)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.AutoMirrored.Filled.TextSnippet, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text("Paste Job Description", style = MaterialTheme.typography.titleMedium)
+            Surface(
+                color = backgroundColor,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.size(40.dp),
+//                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconTint,
+                    modifier = Modifier.size(20.dp)
+                )
             }
 
-            OutlinedTextField(
-                value = text,
-                onValueChange = onValueChange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(160.dp), // Adjusted height for better screen balance
-                shape = RoundedCornerShape(12.dp),
-                placeholder = { Text("Enter the job requirements here...", style = MaterialTheme.typography.bodyMedium) },
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    focusedBorderColor = MaterialTheme.colorScheme.primary
-                ),
-                textStyle = MaterialTheme.typography.bodyMedium
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = description,
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 16.sp,
+                    maxLines = 3
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ListToolItem(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    iconContainerColor: Color,
+    iconTint: Color,
+    onSurfaceColor: Color,
+    onSurfaceVariant: Color,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            color = iconContainerColor,
+            shape = RoundedCornerShape(12.dp),
+            modifier = Modifier.size(44.dp),
+//            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(20.dp)
             )
         }
-    }
-}
 
-@Composable
-fun QuickToolsSection() {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text(
-            text = "Quick AI Tools",
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold
-        )
+        Spacer(modifier = Modifier.width(16.dp))
 
-        AIQuickToolItem(title = "Rewrite Resume Bullet", icon = Icons.Default.Edit)
-        AIQuickToolItem(title = "Improve Resume Summary", icon = Icons.Default.Notes)
-        AIQuickToolItem(title = "Analyze Job Match", icon = Icons.Default.BarChart)
-    }
-}
-
-@Composable
-fun AIQuickToolItem(title: String, icon: ImageVector) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        onClick = { /* Tool Logic */ },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(Modifier.width(12.dp))
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Spacer(Modifier.weight(1f))
-            Icon(Icons.Default.ChevronRight, contentDescription = null, tint = Color.Gray)
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                color = onSurfaceColor
+            )
+            Text(
+                text = subtitle,
+                fontSize = 13.sp,
+                color = onSurfaceVariant,
+                lineHeight = 17.sp
+            )
         }
+
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = onSurfaceVariant.copy(alpha = 0.4f),
+            modifier = Modifier.padding(start = 8.dp)
+        )
     }
 }
-

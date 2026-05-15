@@ -32,12 +32,14 @@ import androidx.compose.runtime.getValue
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.example.cvpilot.features.CoverLetter.CoverLetterSheetContent
 
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewModel() ) {
     var showLinkedInImport by remember { mutableStateOf(false) }
     var showJobAdEntry by remember { mutableStateOf(false) }
+    var showCoverLetterEntry by remember { mutableStateOf(false) }
 
     val showPaywall by viewModel.showPaywall.collectAsStateWithLifecycle()
 
@@ -75,7 +77,7 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
                 }
                 showJobAdEntry = true
             })
-            ActionCard("Generate cover letter", "Generate a cover letter for an application", Icons.Default.Link, Color(0xFF4CAF50), onClick = { showLinkedInImport = true })
+            ActionCard("Generate cover letter", "Generate a cover letter for an application", Icons.Default.Link, Color(0xFF4CAF50), onClick = { showCoverLetterEntry = true })
         }
 
         // Recent Resumes Section
@@ -183,6 +185,17 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
             }
 
         )
+    }
+    if (showCoverLetterEntry) {
+        ModalBottomSheet(
+            onDismissRequest = { showCoverLetterEntry = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+            dragHandle = { BottomSheetDefaults.DragHandle() }
+        ) {
+            CoverLetterSheetContent(
+                onDismiss = { showCoverLetterEntry = false }
+            )
+        }
     }
 
 }
