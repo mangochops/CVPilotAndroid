@@ -13,7 +13,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.CvPilot"
-        android:name=".CvPilotApplication">
+        android:name="com.example.cvpilot.CvPilotApplication">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -24,11 +24,11 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <intent-filter android:label="supabase_login">
+            <intent-filter android:label="cvpilot_auth">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="supabase" android:host="login" />
+                <data android:scheme="cvpilot" android:host="login" />
             </intent-filter>
         </activity>
     </application>

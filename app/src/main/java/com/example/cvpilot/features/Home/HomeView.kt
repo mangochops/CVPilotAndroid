@@ -27,6 +27,11 @@ import androidx.compose.foundation.horizontalScroll
 import com.example.cvpilot.ui.component.CompactCoverLetterCard
 import com.example.cvpilot.ui.component.CompactResumeCard
 import android.util.Log
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.getValue
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 
 
 @Composable
@@ -38,8 +43,16 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
 
     val userProfile by viewModel.userProfile.collectAsStateWithLifecycle()
     val credits by viewModel.userCredits.collectAsStateWithLifecycle()
+    val isUploading by viewModel.isUploading.collectAsStateWithLifecycle()
 
     val animatedBrush = animatedGradientBrush()
+
+    // File picker launcher for PDF upload
+    val pdfLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.uploadResumeToSupabase(it) }
+    }
 
     Column(
         modifier = modifier
@@ -50,19 +63,19 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
         verticalArrangement = Arrangement.spacedBy(30.dp)
     ) {
         // Header
-        HeaderSection(userProfile?.firstName ?: "Willi", credits, animatedBrush)
+        HeaderSection(userProfile?.firstName ?: "User", credits, animatedBrush)
 
         // Action Cards (Logic for clicking can be added via lambdas)
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-            ActionCard("Edit Primary CV", "Store your master resume", Icons.Default.ContactPage, Color(0xFF2196F3),onClick = { TODO() })
-            ActionCard("Tailor CV for Job", "Paste job link or upload PDF", Icons.Default.AutoAwesome, Color(0xFF9C27B0), onClick = {
+            ActionCard("Upload your primary CV", "Store your master resume", Icons.Default.ContactPage, Color(0xFF2196F3),onClick = { pdfLauncher.launch("application/pdf") })
+            ActionCard("Tailor CV for Job", "Paste job description", Icons.Default.AutoAwesome, Color(0xFF9C27B0), onClick = {
                 // Optional: Default to the first resume if one exists
                 if (viewModel.recentResumes.isNotEmpty() && viewModel.selectedResumeFullText.isEmpty()) {
                     viewModel.selectedResumeFullText = viewModel.recentResumes.first().content ?: ""
                 }
                 showJobAdEntry = true
             })
-            ActionCard("Import from LinkedIn", "Upload LinkedIn profile PDF", Icons.Default.Link, Color(0xFF4CAF50), onClick = { showLinkedInImport = true })
+            ActionCard("Generate cover letter", "Generate a cover letter for an application", Icons.Default.Link, Color(0xFF4CAF50), onClick = { showLinkedInImport = true })
         }
 
         // Recent Resumes Section

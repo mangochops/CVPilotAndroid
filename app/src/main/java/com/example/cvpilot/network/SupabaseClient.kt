@@ -14,6 +14,7 @@ import io.github.jan.supabase.serializer.KotlinXSerializer
 import kotlinx.serialization.json.Json
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
+import io.github.jan.supabase.auth.SettingsSessionManager
 
 
 // 1. Define your Data Model for Supabase
@@ -40,7 +41,10 @@ object SupabaseManager {
         supabaseKey = ANON_KEY
     ) {
         install(Postgrest)
-        install(Auth)
+        install(Auth){
+            // ADD THIS LINE: This persists the user session in SharedPreferences
+            sessionManager = SettingsSessionManager()
+        }
         install(io.github.jan.supabase.storage.Storage)
         install(Functions)
 

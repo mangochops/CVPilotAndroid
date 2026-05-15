@@ -85,6 +85,8 @@ dependencies {
     implementation("io.github.jan-tennert.supabase:compose-auth:3.0.1")
 
     implementation("androidx.compose.runtime:runtime:1.7.0")
+    // Add this under your "Libraries from Catalog" or "UI" section
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.0")
 
     // UI & RevenueCat
     implementation("com.revenuecat.purchases:purchases:8.4.0")

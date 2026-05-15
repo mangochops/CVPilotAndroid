@@ -33,8 +33,8 @@ import androidx.lifecycle.ViewModel
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Default.Home)
-    object Resumes : Screen("resumes", "Resumes", Icons.Default.Folder)
-    object AiTools : Screen("ai_tools", "AI Tools", Icons.Default.AutoAwesome)
+    object Resumes : Screen("resumes", "Files", Icons.Default.Folder)
+    object AiTools : Screen("ai_tools", "Tools", Icons.Default.AutoAwesome)
     object Profile : Screen("profile", "Profile", Icons.Default.AccountCircle)
 }
 

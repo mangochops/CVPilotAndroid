@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cvpilot.models.Resume
+import com.example.cvpilot.models.CoverLetter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.github.jan.supabase.SupabaseClient
@@ -22,31 +23,73 @@ import io.github.jan.supabase.auth.auth
 @HiltViewModel
 class ResumeViewModel @Inject constructor(
     private val supabaseClient: SupabaseClient,
-    @ApplicationContext private val context: Context // Hilt provides this automatically
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _resumes = MutableStateFlow<List<Resume>>(emptyList())
     val resumes: StateFlow<List<Resume>> = _resumes.asStateFlow()
 
+    // Added state flow tracking for the premium cover letters view toggle logic
+    private val _coverLetters = MutableStateFlow<List<CoverLetter>>(emptyList())
+    val coverLetters: StateFlow<List<CoverLetter>> = _coverLetters.asStateFlow()
+
     private val _isUploading = MutableStateFlow(false)
     val isUploading: StateFlow<Boolean> = _isUploading.asStateFlow()
 
     init {
+        fetchLibraryContent()
+    }
+
+    // Unified fetch strategy to sync both tables simultaneously on initialization
+    fun fetchLibraryContent() {
         fetchResumes()
+        fetchCoverLetters()
     }
 
     fun fetchResumes() {
         viewModelScope.launch {
             try {
+                val currentUserId = supabaseClient.auth.currentUserOrNull()?.id
+                if (currentUserId == null) {
+                    Log.e("RESUME_DEBUG", "Cannot fetch resumes: User not authenticated")
+                    return@launch
+                }
+
                 val result = supabaseClient.from("resumes")
                     .select {
+                        filter { eq("user_id", currentUserId) } // Filter matches current account row entries
                         order("created_at", order = Order.DESCENDING)
                     }
                     .decodeList<Resume>()
 
                 _resumes.value = result
+                Log.d("RESUME_DEBUG", "Successfully loaded ${result.size} resumes")
             } catch (e: Exception) {
-                Log.e("RESUME_DEBUG", "Error fetching: ${e.message}")
+                Log.e("RESUME_DEBUG", "Error fetching resumes: ${e.message}")
+            }
+        }
+    }
+
+    fun fetchCoverLetters() {
+        viewModelScope.launch {
+            try {
+                val currentUserId = supabaseClient.auth.currentUserOrNull()?.id
+                if (currentUserId == null) {
+                    Log.e("RESUME_DEBUG", "Cannot fetch cover letters: User not authenticated")
+                    return@launch
+                }
+
+                val result = supabaseClient.from("cover_letters")
+                    .select {
+                        filter { eq("user_id", currentUserId) }
+                        order("created_at", order = Order.DESCENDING)
+                    }
+                    .decodeList<CoverLetter>()
+
+                _coverLetters.value = result
+                Log.d("RESUME_DEBUG", "Successfully loaded ${result.size} cover letters")
+            } catch (e: Exception) {
+                Log.e("RESUME_DEBUG", "Error fetching cover letters: ${e.message}")
             }
         }
     }
@@ -55,6 +98,9 @@ class ResumeViewModel @Inject constructor(
         viewModelScope.launch {
             _isUploading.value = true
             try {
+                val currentUserId = supabaseClient.auth.currentUserOrNull()?.id
+                    ?: throw Exception("User not authenticated")
+
                 // Access contentResolver via the injected context
                 val bytes = context.contentResolver.openInputStream(uri)?.use {
                     it.readBytes()
@@ -67,21 +113,18 @@ class ResumeViewModel @Inject constructor(
 
                 val publicUrl = bucket.publicUrl(fileName)
 
-                val currentUserId = supabaseClient.auth.currentUserOrNull()?.id
-                    ?: throw Exception("User not authenticated")
-
-                // 4. Create the Database Record
-                // Note: Ensure your Resume model matches the DB columns (user_id, file_url, etc.)
+                // Create the Database Record explicitly referencing the current authenticated user id
                 val newResume = Resume(
                     userId = currentUserId,
-                    title = "My Uploaded Resume",
+                    title = "Uploaded Resume (${System.currentTimeMillis()})",
                     fileUrl = publicUrl,
-                    name = fileName, // Fixed: Added missing 'name' parameter
-                    content = ""     // Fixed: Use empty string instead of null if needed
+                    name = fileName,
+                    content = ""
                 )
 
                 supabaseClient.from("resumes").insert(newResume)
 
+                // Refresh the list immediately to append the changes
                 fetchResumes()
             } catch (e: Exception) {
                 Log.e("Upload", "Error: ${e.message}")
