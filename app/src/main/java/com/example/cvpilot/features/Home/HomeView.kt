@@ -85,7 +85,7 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
                 }
                 showJobAdEntry = true
             })
-            ActionCard("Generate cover letter", "Generate a cover letter for an application", Icons.Default.Link, Color(0xFF4CAF50), onClick = { showCoverLetterEntry = true })
+            ActionCard("Generate cover letter", "Generate a cover letter for an application", Icons.Default.Email, Color(0xFF4CAF50), onClick = { showCoverLetterEntry = true })
         }
 
         // Recent Resumes Section

@@ -9,7 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRightAlt
-
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -21,10 +21,16 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.material.icons.automirrored.filled.Logout
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileView(onNavigate: (String) -> Unit = {}, modifier: Modifier = Modifier) {
+fun ProfileView(
+    viewModel: ProfileViewModel = hiltViewModel(),
+    onNavigate: (String) -> Unit = {},
+    onLogoutNavigate: () -> Unit = {},
+    modifier: Modifier = Modifier) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -50,40 +56,59 @@ fun ProfileView(onNavigate: (String) -> Unit = {}, modifier: Modifier = Modifier
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f))
             ) {
                 Row(
                     modifier = Modifier.padding(20.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Initials Avatar Circle Profile Fallback
                     Box(
                         modifier = Modifier
-                            .size(80.dp)
+                            .size(72.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                            .background(MaterialTheme.colorScheme.primaryContainer),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = null,
-                            modifier = Modifier.size(35.dp),
-                            tint = MaterialTheme.colorScheme.primary
+                        Text(
+                            text = viewModel.userName.take(2).uppercase(),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            letterSpacing = 1.sp
                         )
                     }
 
                     Spacer(Modifier.width(20.dp))
 
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = "User", // Bind to ViewModel later
+                            text = viewModel.userName,
                             style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
+
                         Text(
-                            text = "0 Credits Remaining",
+                            text = viewModel.userEmail,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 6.dp)
                         )
+
+                        // Dynamic Subscription Badge Engine Status
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (viewModel.isPremiumUser) Color(0xFFFF9800).copy(alpha = 0.15f) else MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = if (viewModel.isPremiumUser) Color(0xFFFF9800) else MaterialTheme.colorScheme.onSecondaryContainer
+                        ) {
+                            Text(
+                                text = if (viewModel.isPremiumUser) "Premium Member" else "${viewModel.creditsRemaining} Credits Remaining",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -106,21 +131,21 @@ fun ProfileView(onNavigate: (String) -> Unit = {}, modifier: Modifier = Modifier
             }
 
             // MARK: - TOOLS SECTION
-            ProfileSection(title = "RESUME TOOLS") {
-                SettingsRow(
-                    icon = Icons.Default.Description,
-                    title = "My Resumes",
-                    iconColor = Color(0xFF9C27B0),
-                    onClick = { onNavigate("resumes") }
-                )
-                HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
-                SettingsRow(
-                    icon = Icons.Default.BarChart,
-                    title = "ATS Analytics",
-                    iconColor = Color(0xFF4CAF50),
-                    onClick = { onNavigate("analytics") }
-                )
-            }
+//            ProfileSection(title = "RESUME TOOLS") {
+//                SettingsRow(
+//                    icon = Icons.Default.Description,
+//                    title = "My Resumes",
+//                    iconColor = Color(0xFF9C27B0),
+//                    onClick = { onNavigate("resumes") }
+//                )
+//                HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+//                SettingsRow(
+//                    icon = Icons.Default.BarChart,
+//                    title = "ATS Analytics",
+//                    iconColor = Color(0xFF4CAF50),
+//                    onClick = { onNavigate("analytics") }
+//                )
+//            }
 
             // MARK: - SUPPORT & LEGAL
             ProfileSection(title = "SUPPORT") {
@@ -137,32 +162,47 @@ fun ProfileView(onNavigate: (String) -> Unit = {}, modifier: Modifier = Modifier
                     iconColor = Color.Gray,
                     onClick = { onNavigate("privacy") }
                 )
+                HorizontalDivider(modifier = Modifier.padding(start = 56.dp), thickness = 0.5.dp)
+                SettingsRow(
+                    icon = Icons.Default.Shield,
+                    title = "Terms & Conditions",
+                    iconColor = Color.Gray,
+                    onClick = { onNavigate("privacy") }
+                )
             }
 
             // MARK: - LOGOUT BUTTON
             Button(
-                onClick = { /* Task: AuthService.signOut() */ },
+                onClick = { viewModel.signOut(onSignOutSuccess = onLogoutNavigate) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(54.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.4f),
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.2f),
                     contentColor = MaterialTheme.colorScheme.error
                 )
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowRightAlt, contentDescription = null)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Logout,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
                     Spacer(Modifier.width(8.dp))
-                    Text("Sign Out", fontWeight = FontWeight.Bold)
+                    Text("Sign Out", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 }
             }
 
             Text(
                 text = "CV Pilot v1.0.4",
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-                modifier = Modifier.padding(bottom = 20.dp)
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                modifier = Modifier.padding(bottom = 8.dp),
+                textAlign = TextAlign.Center
             )
         }
     }

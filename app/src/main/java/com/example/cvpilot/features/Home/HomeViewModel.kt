@@ -32,6 +32,8 @@ import java.util.UUID
 import com.tom_roush.pdfbox.text.PDFTextStripper
 import android.content.Context
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.coroutines.flow.collectLatest
 
 
 data class UserProfile(val firstName: String)
@@ -128,50 +130,54 @@ class HomeViewModel @Inject constructor(
 
     private fun fetchUserData() {
         viewModelScope.launch {
-            Log.d("HOME_VM", "Starting fetchUserData...")
-            try {
-                val user = supabaseClient.auth.currentUserOrNull() ?: return@launch
+            Log.d("HOME_VM", "Starting active session monitoring...")
 
-                // 1. SET INITIAL DATA FROM METADATA IMMEDIATELY
-                // This ensures the UI updates even if the database is slow or fails
-                val metaName = user.userMetadata?.get("full_name")?.jsonPrimitive?.content
-                    ?: user.userMetadata?.get("name")?.jsonPrimitive?.content
-                    ?: "User"
+            // 🚀 FIX: Instead of checking a snapshot once, reactively listen to session changes
+            supabaseClient.auth.sessionStatus.collectLatest { status ->
+                if (status is SessionStatus.Authenticated) {
+                    val user = status.session.user
 
-                Log.d("HOME_VM", "Metadata name found: $metaName")
+                    // 1. SET INITIAL DATA FROM METADATA IMMEDIATELY
+                    val metaName = user?.userMetadata?.get("full_name")?.jsonPrimitive?.content
+                        ?: user?.userMetadata?.get("name")?.jsonPrimitive?.content
+                        ?: "User"
 
-                val initialFirstName = metaName.split(" ").firstOrNull() ?: "User"
-                _userProfile.value = UserProfile(firstName = initialFirstName)
-                Log.d("HOME_VM", "State updated with initial name: $initialFirstName")
+                    Log.d("HOME_VM", "Metadata name found: $metaName")
+                    val initialFirstName = metaName.split(" ").firstOrNull() ?: "User"
 
-                // 2. FETCH FROM PROFILES TABLE (WRAP IN A NESTED TRY)
-                try {
-                    Log.d("HOME_VM", "Querying 'profiles' table for ID: ${user.id}")
-                    val profileData = supabaseClient.from("profiles")
-                        .select { filter { eq("id", user.id) } }
-                        .decodeSingleOrNull<Map<String, JsonElement>>()
+                    // Strip out any accidental residual JSON string artifacts
+                    val cleanFirstName = initialFirstName.replace("\"", "")
+                    _userProfile.value = UserProfile(firstName = cleanFirstName)
 
-                    if (profileData != null) {
-                        Log.d("HOME_VM", "Profile data received: $profileData")
+                    // 2. FETCH FROM PROFILES TABLE CLEANLY
+                    try {
+                        Log.d("HOME_VM", "Querying 'profiles' table for ID: ${user?.id}")
+                        val profileData = supabaseClient.from("profiles")
+                            .select {
+                                filter {
+                                    eq("id", user?.id ?: "" )
+                                }
+                            }.decodeSingleOrNull<Map<String, JsonElement>>()
 
-                        // Update Name from DB if it exists
-                        val dbName = profileData["full_name"]?.jsonPrimitive?.content
-                        if (!dbName.isNullOrBlank()) {
-                            val dbFirstName = dbName.split(" ").firstOrNull() ?: "User"
-                            _userProfile.value = UserProfile(firstName = dbFirstName)
+                        if (profileData != null) {
+                            Log.d("HOME_VM", "Profile data received: $profileData")
+
+                            val dbName = profileData["full_name"]?.jsonPrimitive?.content
+                            if (!dbName.isNullOrBlank()) {
+                                val dbFirstName = dbName.replace("\"", "").split(" ").firstOrNull() ?: "User"
+                                _userProfile.value = UserProfile(firstName = dbFirstName)
+                            }
+
+                            val credits = profileData["credits"]?.jsonPrimitive?.intOrNull ?: 0
+                            _userCredits.value = credits
                         }
-
-                        // Update Credits
-                        val credits = profileData["credits"]?.jsonPrimitive?.intOrNull ?: 0
-                        _userCredits.value = credits
-                        Log.d("HOME_VM", "Credits State updated: $credits")
+                    } catch (e: Exception) {
+                        Log.e("HOME_VM", "Database Profile fetch failed: ${e.message}")
                     }
-                } catch (e: Exception) {
-                    Log.e("HOME_VM", "Database Profile fetch failed: ${e.message}")
+                } else if (status is SessionStatus.NotAuthenticated) {
+                    Log.d("HOME_VM", "User is not logged in.")
+                    _userProfile.value = UserProfile(firstName = "User")
                 }
-
-            } catch (e: Exception) {
-                Log.e("HOME_VM", "General Profile Error: ${e.message}")
             }
         }
     }
