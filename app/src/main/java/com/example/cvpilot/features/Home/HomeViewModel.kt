@@ -73,18 +73,26 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             _isUploading.value = true
             try {
+
                 // Your upload logic here (copy from ResumeViewModel)
                 // e.g., read PDF bytes, extract text, save to Supabase
-                val content = readPdfContent(uri) // Implement this
-                supabaseClient.from("resumes").upsert(
+                val rawPdfText = readPdfContent(uri) // Implement this
+
+                val jsonbContent = buildJsonObject {
+                    put("text", rawPdfText)
+                }
+
+                val fallbackName = userProfile.value?.firstName ?: "User"
+
+                supabaseClient.from("resumes").insert(
                     UserResume(
-                        id = generateId(),
                         user_id = getCurrentUserId(),
                         title = "Primary Resume",
-                        name = userProfile.value?.firstName ?: "User",
-                        content = content,
-                        template_id = null,  // ADD THIS (was missing)
-                        created_at = System.currentTimeMillis().toString()
+                        name = fallbackName,
+                        content = jsonbContent, // Passes verified jsonb data
+                        id = null,              // Supabase will automatically assign gen_random_uuid()
+                        created_at = null,      // Supabase will automatically assign now()
+                        file_url = null
                     )
                 )
                 fetchRecentGenerations() // Refresh the list

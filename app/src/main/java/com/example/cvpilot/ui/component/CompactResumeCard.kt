@@ -26,9 +26,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.Icon
+import androidx.compose.foundation.isSystemInDarkTheme
 
 @Composable
 fun CompactResumeCard(resume: Resume, onClick: () -> Unit) {
+    val isDark = isSystemInDarkTheme()
+
+    val iconSurfaceColor = if (isDark) Color(0xFF0D233A) else Color(0xFFE3F2FD)
+    val labelColor = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
+
     ElevatedCard(
         onClick = onClick,
         modifier = Modifier
@@ -48,7 +54,7 @@ fun CompactResumeCard(resume: Resume, onClick: () -> Unit) {
             // Top Row: Icon and Type
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
-                    color = Color(0xFFE3F2FD),
+                    color = iconSurfaceColor,
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.size(36.dp)
                 ) {
@@ -72,6 +78,7 @@ fun CompactResumeCard(resume: Resume, onClick: () -> Unit) {
                 Text(
                     text = resume.name.ifEmpty { "Untitled" },
                     fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

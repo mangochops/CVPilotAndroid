@@ -2,20 +2,28 @@ package com.example.cvpilot.models
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class Resume(
+    @SerialName("id")
     val id: String? = null,
 
-    @SerialName("user_id") // Maps Kotlin userId to DB user_id
+    @SerialName("user_id")
     val userId: String,
 
-    val title: String,
+    @SerialName("title")
+    val title: String = "Primary Resume",
 
-    @SerialName("file_url") // Maps Kotlin fileUrl to DB file_url
-    val fileUrl: String?,
+    @SerialName("name")
+    val name: String,
 
-    val name: String = "", // Add this if you want to store the filename
+    @SerialName("content")
+    val content: JsonElement? = null, // Matches the jsonb type securely
 
-    val content: String? = null // Your schema uses jsonb/text for content
+    @SerialName("file_url")
+    val fileUrl: String? = null,
+
+    @SerialName("created_at")
+    val createdAt: String? = null
 )

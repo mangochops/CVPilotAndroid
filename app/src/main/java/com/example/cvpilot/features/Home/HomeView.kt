@@ -33,6 +33,8 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import com.example.cvpilot.features.CoverLetter.CoverLetterSheetContent
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,9 +73,15 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
             ActionCard("Upload your primary CV", "Store your master resume", Icons.Default.ContactPage, Color(0xFF2196F3),onClick = { pdfLauncher.launch("application/pdf") })
             ActionCard("Tailor CV for Job", "Paste job description", Icons.Default.AutoAwesome, Color(0xFF9C27B0), onClick = {
-                // Optional: Default to the first resume if one exists
                 if (viewModel.recentResumes.isNotEmpty() && viewModel.selectedResumeFullText.isEmpty()) {
-                    viewModel.selectedResumeFullText = viewModel.recentResumes.first().content ?: ""
+                    //  Grab the first resume and parse its text property safely
+                    val firstResume = viewModel.recentResumes.first()
+                    val cleanText = try {
+                        firstResume.content?.jsonObject?.get("text")?.jsonPrimitive?.content ?: ""
+                    } catch (e: Exception) {
+                        ""
+                    }
+                    viewModel.selectedResumeFullText = cleanText
                 }
                 showJobAdEntry = true
             })
@@ -99,7 +107,8 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
             } else if (viewModel.recentResumes.isEmpty()) {
                 Text(
                     "No generations yet. Try tailoring a CV!",
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(16.dp)
                 )
             } else {
@@ -109,8 +118,13 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
                         CompactResumeCard(
                             resume = resume,
                             onClick = {
-                                // Keep your logic for selecting the resume
-                                viewModel.selectedResumeFullText = resume.content ?: ""
+                                //  Extract the clean text out of the jsonb container safely
+                                val cleanText = try {
+                                    resume.content?.jsonObject?.get("text")?.jsonPrimitive?.content ?: ""
+                                } catch (e: Exception) {
+                                    ""
+                                }
+                                viewModel.selectedResumeFullText = cleanText
                                 showJobAdEntry = true
                             }
                         )
@@ -139,7 +153,7 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
                 Text(
                     "Your generated letters will appear here.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             } else {

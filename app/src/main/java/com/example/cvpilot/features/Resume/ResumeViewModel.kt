@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import io.github.jan.supabase.auth.auth
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 @HiltViewModel
 class ResumeViewModel @Inject constructor(
@@ -101,7 +103,6 @@ class ResumeViewModel @Inject constructor(
                 val currentUserId = supabaseClient.auth.currentUserOrNull()?.id
                     ?: throw Exception("User not authenticated")
 
-                // Access contentResolver via the injected context
                 val bytes = context.contentResolver.openInputStream(uri)?.use {
                     it.readBytes()
                 } ?: throw Exception("Failed to read file")
@@ -109,25 +110,29 @@ class ResumeViewModel @Inject constructor(
                 val fileName = "resume_${System.currentTimeMillis()}.pdf"
                 val bucket = supabaseClient.storage.from("resumes")
 
+                // Upload raw binary data file to storage buckets
                 bucket.upload(path = fileName, data = bytes)
-
                 val publicUrl = bucket.publicUrl(fileName)
 
-                // Create the Database Record explicitly referencing the current authenticated user id
+                // Optional: If you want to parse text here too, you can call your readPdfContent helper.
+                // Otherwise, we pass an empty JSON structure for now to keep jsonb happy.
+                val emptyContentJson = buildJsonObject { put("text", "") }
+
+                // 🚀 Create the database record explicitly using the standard schema properties
                 val newResume = Resume(
                     userId = currentUserId,
-                    title = "Uploaded Resume (${System.currentTimeMillis()})",
+                    title = "Uploaded Resume",
                     fileUrl = publicUrl,
                     name = fileName,
-                    content = ""
+                    content = emptyContentJson
                 )
 
                 supabaseClient.from("resumes").insert(newResume)
 
-                // Refresh the list immediately to append the changes
+                // Refresh list instantly to display changes on screen!
                 fetchResumes()
             } catch (e: Exception) {
-                Log.e("Upload", "Error: ${e.message}")
+                Log.e("Upload", "Error during library asset push: ${e.message}")
             } finally {
                 _isUploading.value = false
             }

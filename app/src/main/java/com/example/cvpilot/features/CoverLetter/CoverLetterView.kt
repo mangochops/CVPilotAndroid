@@ -20,14 +20,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.cvpilot.ui.component.animatedGradientBrush
+import com.example.cvpilot.features.Home.HomeViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.cvpilot.ui.component.UploadJobAdView
+import com.example.cvpilot.models.AtsMatrixResponse
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CoverLetterView(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    homeViewModel: HomeViewModel = hiltViewModel()
 ) {
+    var atsResult by remember { mutableStateOf<AtsMatrixResponse?>(null) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    var showOptimizationSheet by remember { mutableStateOf(false) }
+    var activeOptimizationType by remember { mutableStateOf(OptimizationType.BULLET_REWRITE) }
+
     val scrollState = rememberScrollState()
     val animatedBrush = animatedGradientBrush()
+
+    var showCoverLetterEntry by remember { mutableStateOf(false) }
+    var showJobAdEntry by remember { mutableStateOf(false) }
 
     // Consistent material colors mapping
     val backgroundColor = MaterialTheme.colorScheme.background
@@ -36,9 +52,14 @@ fun CoverLetterView(
     val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
     val outlineVariant = MaterialTheme.colorScheme.outlineVariant
 
+
+    // Local state calculation for Primary CV parsing
+    val resumes = homeViewModel.recentResumes
+    val primaryResume = resumes.firstOrNull()
+
     Scaffold(
         topBar = {
-            LargeTopAppBar(
+            TopAppBar(
                 title = {
                     Text(
                         text = "AI Workspace",
@@ -48,7 +69,7 @@ fun CoverLetterView(
                         )
                     )
                 },
-                colors = TopAppBarDefaults.largeTopAppBarColors(
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = backgroundColor,
                     titleContentColor = onSurfaceColor
                 )
@@ -94,7 +115,19 @@ fun CoverLetterView(
                         backgroundColor = Color(0xFF9C27B0).copy(alpha = 0.08f),
                         outlineVariant = outlineVariant,
                         modifier = Modifier.weight(1f),
-                        onClick = { /* Open Tailor Flow */ }
+                        onClick = {
+                            if (homeViewModel.recentResumes.isNotEmpty() && homeViewModel.selectedResumeFullText.isEmpty()) {
+                                // 🚀 Extract clean text for the workspace view engine
+                                val firstResume = homeViewModel.recentResumes.first()
+                                val cleanText = try {
+                                    firstResume.content?.jsonObject?.get("text")?.jsonPrimitive?.content ?: ""
+                                } catch (e: Exception) {
+                                    ""
+                                }
+                                homeViewModel.selectedResumeFullText = cleanText
+                            }
+                            showJobAdEntry = true
+                        }
                     )
 
                     GridToolCard(
@@ -105,7 +138,7 @@ fun CoverLetterView(
                         backgroundColor = Color(0xFF4CAF50).copy(alpha = 0.08f),
                         outlineVariant = outlineVariant,
                         modifier = Modifier.weight(1f),
-                        onClick = { /* Open Letter Flow */ }
+                        onClick = { showCoverLetterEntry = true }
                     )
                 }
             }
@@ -136,7 +169,10 @@ fun CoverLetterView(
                             iconTint = Color(0xFF38BDF8),
                             onSurfaceColor = onSurfaceColor,
                             onSurfaceVariant = onSurfaceVariant,
-                            onClick = { /* Tool action */ }
+                            onClick = {
+                                activeOptimizationType = OptimizationType.BULLET_REWRITE
+                                showOptimizationSheet = true
+                            }
                         )
                         HorizontalDivider(color = outlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(horizontal = 16.dp))
                         ListToolItem(
@@ -147,7 +183,10 @@ fun CoverLetterView(
                             iconTint = Color(0xFFC084FC),
                             onSurfaceColor = onSurfaceColor,
                             onSurfaceVariant = onSurfaceVariant,
-                            onClick = { /* Tool action */ }
+                            onClick = {
+                                activeOptimizationType = OptimizationType.SUMMARY_IMPROVE
+                                showOptimizationSheet = true
+                            }
                         )
                         HorizontalDivider(color = outlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(horizontal = 16.dp))
                         ListToolItem(
@@ -158,7 +197,25 @@ fun CoverLetterView(
                             iconTint = Color(0xFF34D399),
                             onSurfaceColor = onSurfaceColor,
                             onSurfaceVariant = onSurfaceVariant,
-                            onClick = { /* Tool action */ }
+                            onClick = {
+                                activeOptimizationType = OptimizationType.MATCH_ANALYSIS
+                                showOptimizationSheet = true
+                            }
+                        )
+                        HorizontalDivider(color = outlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(horizontal = 16.dp))
+                        ListToolItem(
+                            title = "ATS Check Optimization",
+                            subtitle = "Run deep structural compliance scans to eliminate parsing barriers.",
+                            icon = Icons.Default.FactCheck, // Premium validation tick icon
+                            iconContainerColor = Color(0xFF451A03), // Sleek deep amber/brown container
+                            iconTint = Color(0xFFFB923C), // Eye-catching premium orange accent
+                            onSurfaceColor = onSurfaceColor,
+                            onSurfaceVariant = onSurfaceVariant,
+                            onClick = {
+                                // This launches the custom edge-function matrix evaluation panel
+                                activeOptimizationType = OptimizationType.ATS_CHECK
+                                showOptimizationSheet = true
+                            }
                         )
                     }
                 }
@@ -166,6 +223,45 @@ fun CoverLetterView(
 
             Spacer(modifier = Modifier.height(40.dp))
         }
+    }
+
+    if (showOptimizationSheet) {
+        ModalBottomSheet(
+            onDismissRequest = { showOptimizationSheet = false },
+            containerColor = surfaceColor,
+            dragHandle = { BottomSheetDefaults.DragHandle() }
+        ) {
+            PromptOptimizationSheetContent(
+                type = activeOptimizationType,
+
+                onDismiss = { showOptimizationSheet = false }
+            )
+        }
+    }
+
+    if (showCoverLetterEntry) {
+        ModalBottomSheet(
+            onDismissRequest = { showCoverLetterEntry = false },
+            containerColor = surfaceColor,
+            dragHandle = { BottomSheetDefaults.DragHandle() }
+        ) {
+            CoverLetterSheetContent(
+                onDismiss = { showCoverLetterEntry = false }
+            )
+        }
+    }
+
+    // 2. Interactive Sheet Engine for Resume Tailoring
+    if (showJobAdEntry) {
+        UploadJobAdView(
+            selectedResumeContent = homeViewModel.selectedResumeFullText,
+            onDismiss = { showJobAdEntry = false },
+            onSelectResume = { showJobAdEntry = false },
+            onShowPaywall = {
+                showJobAdEntry = false
+                homeViewModel.triggerPaywall()
+            }
+        )
     }
 }
 

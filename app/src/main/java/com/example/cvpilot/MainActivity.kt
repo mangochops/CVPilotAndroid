@@ -29,6 +29,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cvpilot.authentication.AuthService
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModel
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Alignment
 
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
@@ -102,6 +107,22 @@ class MainActivity : ComponentActivity() {
                         )
                     }
 
+                    composable(
+                        route = "resume_details/{resumeId}",
+                        arguments = listOf(navArgument("resumeId") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val resumeId = backStackEntry.arguments?.getString("resumeId") ?: ""
+                        ResumeDetailsPlaceholderScreen(resumeId = resumeId, onBack = { rootNavController.popBackStack() })
+                    }
+
+                    composable(
+                        route = "cover_letter_details/{letterId}",
+                        arguments = listOf(navArgument("letterId") { type = NavType.StringType })
+                    ) { backStackEntry ->
+                        val letterId = backStackEntry.arguments?.getString("letterId") ?: ""
+                        CoverLetterDetailsPlaceholderScreen(letterId = letterId, onBack = { rootNavController.popBackStack() })
+                    }
+
                     composable("edit_profile_screen") {
                         // TODO: Implement EditProfileView()
                         Text("Edit Profile Screen")
@@ -163,7 +184,11 @@ fun MainScreen(onNavigateToDeepScreen: (String) -> Unit) {
 
         when (selectedItem) {
             0 -> HomeView(modifier)
-            1 -> ResumeLibraryView(modifier)
+            1 -> ResumeLibraryView(
+                modifier = modifier,
+                onResumeClick = { id -> onNavigateToDeepScreen("resume_details/$id") },
+                onCoverLetterClick = { id -> onNavigateToDeepScreen("cover_letter_details/$id") }
+            )
             2 -> CoverLetterView(modifier)
             3 -> ProfileView(
                 onNavigate = { route ->
@@ -183,6 +208,48 @@ fun MainScreen(onNavigateToDeepScreen: (String) -> Unit) {
                 },
                 modifier = modifier
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ResumeDetailsPlaceholderScreen(resumeId: String, onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Resume Details") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues).run { fillMaxSize() }, contentAlignment = Alignment.Center) {
+            Text("Inspecting Resume ID:\n$resumeId", style = MaterialTheme.typography.titleMedium)
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CoverLetterDetailsPlaceholderScreen(letterId: String, onBack: () -> Unit) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Cover Letter Details") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    }
+                }
+            )
+        }
+    ) { paddingValues ->
+        Box(modifier = Modifier.padding(paddingValues).run { fillMaxSize() }, contentAlignment = Alignment.Center) {
+            Text("Inspecting Cover Letter ID:\n$letterId", style = MaterialTheme.typography.titleMedium)
         }
     }
 }

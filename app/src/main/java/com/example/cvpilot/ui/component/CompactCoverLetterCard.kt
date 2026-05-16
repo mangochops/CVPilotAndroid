@@ -28,9 +28,18 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Icon
 import com.example.cvpilot.models.CoverLetter
+import androidx.compose.foundation.isSystemInDarkTheme
 
 @Composable
 fun CompactCoverLetterCard(letter: CoverLetter, onClick: () -> Unit) {
+    val isDark = isSystemInDarkTheme()
+
+    // Dynamic container and content colors for dark/light premium consistency
+    val cardBgColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else Color(0xFFFFF9F0)
+    val iconSurfaceColor = if (isDark) Color(0xFF3E2C00) else Color(0xFFFFECB3)
+    val textColor = MaterialTheme.colorScheme.onSurface
+    val labelColor = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
+
     ElevatedCard(
         onClick = onClick,
         modifier = Modifier
@@ -38,7 +47,7 @@ fun CompactCoverLetterCard(letter: CoverLetter, onClick: () -> Unit) {
             .height(140.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = Color(0xFFFFF9F0) // Warm premium tone for cover letters
+            containerColor = cardBgColor // Warm premium tone for cover letters
         )
     ) {
         Column(
@@ -49,7 +58,7 @@ fun CompactCoverLetterCard(letter: CoverLetter, onClick: () -> Unit) {
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
-                    color = Color(0xFFFFECB3),
+                    color = iconSurfaceColor,
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.size(36.dp)
                 ) {
@@ -61,13 +70,14 @@ fun CompactCoverLetterCard(letter: CoverLetter, onClick: () -> Unit) {
                     )
                 }
                 Spacer(Modifier.width(10.dp))
-                Text("Cover Letter", style = MaterialTheme.typography.labelMedium)
+                Text("Cover Letter", style = MaterialTheme.typography.labelMedium, color = labelColor)
             }
 
             Text(
                 text = letter.companyName ?: "New Application",
                 fontWeight = FontWeight.Bold,
                 maxLines = 2,
+                color = textColor,
                 overflow = TextOverflow.Ellipsis
             )
         }

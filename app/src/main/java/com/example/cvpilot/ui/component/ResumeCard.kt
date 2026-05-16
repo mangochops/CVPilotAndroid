@@ -26,10 +26,20 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Surface
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.remember
 import com.example.cvpilot.models.Resume
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 @Composable
 fun ResumeCard(resume: Resume, onClick: () -> Unit) {
+    val plainTextPreview = remember(resume.content) {
+        try {
+            resume.content?.jsonObject?.get("text")?.jsonPrimitive?.content ?: ""
+        } catch (e: Exception) {
+            ""
+        }
+    }
     ElevatedCard(
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.fillMaxWidth(),
@@ -72,7 +82,7 @@ fun ResumeCard(resume: Resume, onClick: () -> Unit) {
                 }
 
                 Text(
-                    text = resume.content?.takeIf { it.isNotBlank() } ?: "No content preview available",
+                    text = plainTextPreview.ifBlank { "No content preview available" },
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                     maxLines = 2,

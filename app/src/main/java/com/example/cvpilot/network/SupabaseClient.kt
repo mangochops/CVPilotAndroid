@@ -15,19 +15,20 @@ import kotlinx.serialization.json.Json
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import io.github.jan.supabase.auth.SettingsSessionManager
+import kotlinx.serialization.json.JsonElement
 
 
 // 1. Define your Data Model for Supabase
 @Serializable
 data class UserResume(
-    val id: String, // Or UUID depending on your DB schema
+    val id: String? = null, // Or UUID depending on your DB schema
     val user_id: String,
-    val title: String,
+    val title: String = "Primary Resume",
     val name: String,
-    val content: String,
-    val template_id: String?,
+    val content: JsonElement,
+//    val template_id: String?,
     val file_url: String? = null,
-    val created_at: String // ISO 8601 string is best for Supabase
+    val created_at: String? = null // ISO 8601 string is best for Supabase
 )
 
 object SupabaseManager {

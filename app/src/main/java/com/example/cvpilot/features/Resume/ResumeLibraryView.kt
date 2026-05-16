@@ -29,13 +29,16 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.cvpilot.models.Resume
 import com.example.cvpilot.ui.component.animatedGradientBrush
+import androidx.compose.foundation.isSystemInDarkTheme
 
 enum class LibraryTab { RESUMES, COVER_LETTERS }
 
 @Composable
 fun ResumeLibraryView(
     modifier: Modifier = Modifier,
-    viewModel: ResumeViewModel = hiltViewModel()
+    viewModel: ResumeViewModel = hiltViewModel(),
+    onResumeClick: (resumeId: String) -> Unit = {},
+    onCoverLetterClick: (letterId: String) -> Unit = {}
 ) {
     // Collect states from ViewModel
     val resumes by viewModel.resumes.collectAsState()
@@ -69,25 +72,26 @@ fun ResumeLibraryView(
             // Premium Header Layout
             LibraryHeader(animatedBrush, onSurfaceColor = onSurfaceColor)
 
+            PrimaryResumeSection(
+                resumes = resumes,
+                onUploadClick = {
+                    val primaryId = resumes.firstOrNull()?.id
+                    if (primaryId != null) onResumeClick(primaryId) else launcher.launch("application/pdf")
+                },
+                surfaceColor = surfaceColor,
+                onSurfaceColor = onSurfaceColor,
+                onSurfaceVariant = onSurfaceVariant
+            )
 
 
-            // Primary Resume Section (Stays static at the top when Resumes tab is active)
-            if (selectedTab == LibraryTab.RESUMES) {
-                PrimaryResumeSection(
-                    resumes = resumes,
-                    onUploadClick = { launcher.launch("application/pdf") },
-                    surfaceColor = surfaceColor,
-                    onSurfaceColor = onSurfaceColor,
-                    onSurfaceVariant = onSurfaceVariant
-                )
-            }
 
             // Custom Segmented Control/Toggle Group
             PremiumSegmentedPicker(
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it },
                 surfaceColor = surfaceColor,
-                onSurfaceColor = onSurfaceColor
+                onSurfaceColor = onSurfaceColor,
+                onSurfaceVariant = onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -97,7 +101,7 @@ fun ResumeLibraryView(
                 when (selectedTab) {
                     LibraryTab.RESUMES -> {
                         if (resumes.isEmpty()) {
-                            EmptyLibraryState("No Resumes Yet", "Create your first AI optimized resume")
+                            EmptyLibraryState("No Resumes Yet", "Create your first AI optimized resume", onSurfaceVariant)
                         } else {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
@@ -109,8 +113,10 @@ fun ResumeLibraryView(
                                         subtitle = resume.name,
                                         dateText = "Updated recently", // Replace with raw date string if available
                                         isResume = true,
-                                        onClick = { /* Open Resume Details */ },
+                                        onClick = { resume.id?.let { onResumeClick(it) } },
                                         onSurfaceColor = onSurfaceColor,
+                                        surfaceColor = surfaceColor,
+                                        onSurfaceVariant = onSurfaceVariant,
                                         primaryColor = primaryColor
                                     )
                                 }
@@ -119,7 +125,7 @@ fun ResumeLibraryView(
                     }
                     LibraryTab.COVER_LETTERS -> {
                         if (coverLetters.isEmpty()) {
-                            EmptyLibraryState("No Cover Letters", "Tailor a letter for your dream application")
+                            EmptyLibraryState("No Cover Letters", "Tailor a letter for your dream application", onSurfaceVariant)
                         } else {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
@@ -131,8 +137,10 @@ fun ResumeLibraryView(
                                         subtitle = letter.jobTitle ?: "Job Application",
                                         dateText = "Created recently",
                                         isResume = false,
-                                        onClick = { /* Open Letter Details */ },
+                                        onClick = { letter.id?.let { onCoverLetterClick(it) } },
                                         onSurfaceColor = onSurfaceColor,
+                                        surfaceColor = surfaceColor,
+                                        onSurfaceVariant = onSurfaceVariant,
                                         primaryColor = primaryColor
                                     )
                                 }
@@ -186,6 +194,11 @@ fun PrimaryResumeSection(resumes: List<Resume>, onUploadClick: () -> Unit,
                          onSurfaceVariant: Color) {
     // Finds the first resume or treats it as the default base file
     val primaryResume = resumes.firstOrNull()
+    val isDark = isSystemInDarkTheme()
+
+    // Smooth adaptive border configuration for dark/light variations
+    val borderColor = if (isDark) Color(0xFF2E2E2E) else onSurfaceColor.copy(alpha = 0.12f)
+    val iconBgColor = if (isDark) Color(0xFF22252A) else onSurfaceColor.copy(alpha = 0.06f)
 
     Column(
         modifier = Modifier
@@ -202,10 +215,12 @@ fun PrimaryResumeSection(resumes: List<Resume>, onUploadClick: () -> Unit,
         )
 
         Card(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onUploadClick() },
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = surfaceColor),
-            border = BorderStroke(1.dp, Color(0xFF2E2E2E))
+            border = BorderStroke(1.dp, borderColor)
         ) {
             Row(
                 modifier = Modifier
@@ -219,12 +234,14 @@ fun PrimaryResumeSection(resumes: List<Resume>, onUploadClick: () -> Unit,
                     modifier = Modifier.size(44.dp),
 //                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = Color(0xFFFFD700), // Gold Star for Primary Status
-                        modifier = Modifier.size(22.dp)
-                    )
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))
@@ -233,12 +250,12 @@ fun PrimaryResumeSection(resumes: List<Resume>, onUploadClick: () -> Unit,
                     Text(
                         text = primaryResume?.title ?: "No Master CV Set",
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = onSurfaceColor,
                         fontSize = 16.sp
                     )
                     Text(
                         text = primaryResume?.name ?: "Upload your master copy base file",
-                        color = Color.Gray,
+                        color = onSurfaceVariant,
                         fontSize = 13.sp
                     )
                 }
@@ -263,8 +280,11 @@ fun PremiumSegmentedPicker(
     selectedTab: LibraryTab,
     onTabSelected: (LibraryTab) -> Unit,
     surfaceColor: Color,
-    onSurfaceColor: Color
+    onSurfaceColor: Color,
+    onSurfaceVariant: Color
 ) {
+    val isDark = isSystemInDarkTheme()
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -276,12 +296,13 @@ fun PremiumSegmentedPicker(
     ) {
         LibraryTab.values().forEach { tab ->
             val isSelected = selectedTab == tab
+            val activeBg = if (isDark) Color(0xFF262626) else onSurfaceColor.copy(alpha = 0.12f)
             val backgroundAlpha by animateColorAsState(
-                targetValue = if (isSelected) Color(0xFF262626) else Color.Transparent,
+                targetValue = if (isSelected) activeBg else Color.Transparent,
                 animationSpec = tween(250)
             )
             val textColor by animateColorAsState(
-                targetValue = if (isSelected) Color.White else Color.Gray,
+                targetValue = if (isSelected) onSurfaceColor else onSurfaceVariant,
                 animationSpec = tween(250)
             )
 
@@ -312,17 +333,22 @@ fun PremiumLibraryCard(
     dateText: String,
     isResume: Boolean,
     onClick: () -> Unit,
-    primaryColor: Color,
-    onSurfaceColor: Color
+    surfaceColor: Color,
+    onSurfaceColor: Color,
+    onSurfaceVariant: Color,
+    primaryColor: Color
 ) {
+    val isDark = isSystemInDarkTheme()
+    val borderColor = if (isDark) Color(0xFF222222) else onSurfaceColor.copy(alpha = 0.08f)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 6.dp)
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF141414)),
-        border = BorderStroke(1.dp, Color(0xFF222222)) // Subdued, luxury looking border accent
+        colors = CardDefaults.cardColors(containerColor = surfaceColor),
+        border = BorderStroke(1.dp, borderColor) // Subdued, luxury looking border accent
     ) {
         Row(
             modifier = Modifier
@@ -349,18 +375,18 @@ fun PremiumLibraryCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color.White)
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = onSurfaceColor)
                 )
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.LightGray
+                    color = onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(4.bindDp()))
                 Text(
                     text = dateText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.DarkGray
+                    color = onSurfaceVariant.copy(alpha = 0.6f)
                 )
             }
         }
@@ -371,7 +397,7 @@ fun PremiumLibraryCard(
 private fun Int.bindDp() = this.dp
 
 @Composable
-fun EmptyLibraryState(title: String, desc: String) {
+fun EmptyLibraryState(title: String, desc: String, onSurfaceVariant: Color) {
     Column(
         modifier = Modifier.fillMaxSize().padding(bottom = 60.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -381,11 +407,11 @@ fun EmptyLibraryState(title: String, desc: String) {
             imageVector = Icons.Default.DocumentScanner,
             contentDescription = null,
             modifier = Modifier.size(70.dp),
-            tint = Color(0xFF222222)
+            tint = onSurfaceVariant.copy(alpha = 0.3f)
         )
         Spacer(modifier = Modifier.height(16.dp))
-        Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = Color.White))
+        Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface))
         Spacer(modifier = Modifier.height(6.dp))
-        Text(desc, color = Color.Gray, fontSize = 14.sp)
+        Text(desc, color = onSurfaceVariant, fontSize = 14.sp)
     }
 }
