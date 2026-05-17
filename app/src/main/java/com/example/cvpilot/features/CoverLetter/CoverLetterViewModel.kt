@@ -45,8 +45,25 @@ class CoverLetterViewModel @Inject constructor(
     private var _showPaywall = MutableStateFlow(false)
     val showPaywall = _showPaywall.asStateFlow()
 
+    private val _companyName = MutableStateFlow("")
+    val companyName = _companyName.asStateFlow()
+
+    private val _jobTitle = MutableStateFlow("")
+    val jobTitle = _jobTitle.asStateFlow()
+
     fun updateJobDescription(text: String) { _jobDescription.value = text }
     fun dismissPaywall() { _showPaywall.value = false }
+
+    fun updateCompanyName(name: String) { _companyName.value = name }
+    fun updateJobTitle(title: String) { _jobTitle.value = title }
+
+    fun resetForm() {
+        // Modify this pattern to fit your exact UI State class instantiation footprint
+        _uiState.value = CoverLetterUiState(
+            isLoading = false,
+            generatedLetter = ""
+        )
+    }
 
     fun onGenerateClicked() {
         val currentDesc = _jobDescription.value
@@ -82,6 +99,9 @@ class CoverLetterViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, generatedLetter = "", errorMessage = null) }
             val currentDesc = _jobDescription.value
 
+            val currentCompany = _companyName.value
+            val currentTitle = _jobTitle.value
+
             try {
                 withContext(Dispatchers.IO) {
                     Log.d("CV_DEBUG", "Switching to IO Thread")
@@ -102,11 +122,13 @@ class CoverLetterViewModel @Inject constructor(
                         header(HttpHeaders.Authorization, "Bearer $token")
 
                         // Stream the body to avoid OOM
-                        setBody(buildString {
-                            append("{\"jobDescription\":")
-                            append(Json.encodeToString(currentDesc))
-                            append("}")
-                        })
+                        val jsonBody = buildJsonObject {
+                            put("jobDescription", currentDesc)
+                            put("companyName", currentCompany)
+                            put("jobTitle", currentTitle)
+                        }
+
+                        setBody(jsonBody.toString())
 
                         timeout {
                             requestTimeoutMillis = 60000

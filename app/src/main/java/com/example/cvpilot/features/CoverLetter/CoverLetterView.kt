@@ -133,7 +133,7 @@ fun CoverLetterView(
                     GridToolCard(
                         title = "Cover Letter",
                         description = "Draft contextual application statements from standard requirements.",
-                        icon = Icons.Default.Link,
+                        icon = Icons.Default.Email,
                         iconTint = Color(0xFF4CAF50),
                         backgroundColor = Color(0xFF4CAF50).copy(alpha = 0.08f),
                         outlineVariant = outlineVariant,

@@ -34,6 +34,9 @@ fun CoverLetterSheetContent(
     val jobDescription by viewModel.jobDescription.collectAsStateWithLifecycle()
     val showPaywall by viewModel.showPaywall.collectAsStateWithLifecycle()
 
+    val companyName by viewModel.companyName.collectAsStateWithLifecycle()
+    val jobTitle by viewModel.jobTitle.collectAsStateWithLifecycle()
+
     // Lottie Setup
     val composition by rememberLottieComposition(LottieCompositionSpec.RawRes(R.raw.ai))
     val progress by animateLottieCompositionAsState(
@@ -68,7 +71,11 @@ fun CoverLetterSheetContent(
         if (!uiState.isLoading && uiState.generatedLetter.isEmpty()) {
             JobDescriptionCard(
                 text = jobDescription,
-                onValueChange = { viewModel.updateJobDescription(it) }
+                companyName = companyName,
+                jobTitle = jobTitle,
+                onValueChange = { viewModel.updateJobDescription(it) },
+                onCompanyChange = { viewModel.updateCompanyName(it) },
+                onTitleChange = { viewModel.updateJobTitle(it) }
             )
 
             Button(
@@ -77,7 +84,7 @@ fun CoverLetterSheetContent(
                     .fillMaxWidth()
                     .height(54.dp),
                 shape = RoundedCornerShape(12.dp),
-                enabled = jobDescription.isNotBlank(),
+                enabled = jobDescription.isNotBlank() && companyName.isNotBlank() && jobTitle.isNotBlank(),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
             ) {
                 Icon(Icons.Default.AutoAwesome, contentDescription = null)
@@ -131,7 +138,12 @@ fun CoverLetterSheetContent(
 
             OutlinedButton(
                 modifier = Modifier.fillMaxWidth(),
-                onClick = { viewModel.updateJobDescription("") },
+                onClick = {
+                    viewModel.updateJobDescription("")
+                    viewModel.updateCompanyName("")
+                    viewModel.updateJobTitle("")
+                    viewModel.resetForm() // Explicitly call this to clear uiState.generatedLetter
+                },
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(Icons.Default.Refresh, contentDescription = null)
@@ -141,9 +153,9 @@ fun CoverLetterSheetContent(
         }
 
         // --- 4. PERSISTENT QUICK TOOLS ---
-        if (!uiState.isLoading) {
-            QuickToolsSection()
-        }
+//        if (!uiState.isLoading) {
+//            QuickToolsSection()
+//        }
     }
 
     // Sheet-Isolated Paywall Logic
@@ -156,7 +168,14 @@ fun CoverLetterSheetContent(
 }
 
 @Composable
-fun JobDescriptionCard(text: String, onValueChange: (String) -> Unit) {
+fun JobDescriptionCard(
+    text: String,
+    companyName: String,
+    jobTitle: String,
+    onValueChange : (String) -> Unit,
+    onCompanyChange : (String) -> Unit,
+    onTitleChange : (String) -> Unit
+) {
     Surface(
         shape = RoundedCornerShape(18.dp),
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -169,17 +188,46 @@ fun JobDescriptionCard(text: String, onValueChange: (String) -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.AutoMirrored.Filled.TextSnippet, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Paste Job Description", style = MaterialTheme.typography.titleMedium)
+                Text("Application Details", style = MaterialTheme.typography.titleMedium)
             }
+
+            OutlinedTextField(
+                value = companyName,
+                onValueChange = onCompanyChange,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                label = { Text("Company Name", style = MaterialTheme.typography.bodyMedium) },
+                placeholder = { Text("e.g. Google, Safaricom") },
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary
+                )
+            )
+
+            OutlinedTextField(
+                value = jobTitle,
+                onValueChange = onTitleChange,
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+                label = { Text("Job Position / Title", style = MaterialTheme.typography.bodyMedium) },
+                placeholder = { Text("e.g. Junior Android Developer") },
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary
+                )
+            )
 
             OutlinedTextField(
                 value = text,
                 onValueChange = onValueChange,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(160.dp),
+                    .height(140.dp),
                 shape = RoundedCornerShape(12.dp),
-                placeholder = { Text("Enter the job requirements here...", style = MaterialTheme.typography.bodyMedium) },
+                label = { Text("Job Description") },
+                placeholder = { Text("Paste the requirements or description details here...", style = MaterialTheme.typography.bodyMedium) },
                 colors = OutlinedTextFieldDefaults.colors(
                     unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                     focusedBorderColor = MaterialTheme.colorScheme.primary
