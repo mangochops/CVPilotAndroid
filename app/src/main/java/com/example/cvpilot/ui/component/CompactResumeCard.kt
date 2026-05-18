@@ -27,6 +27,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.isSystemInDarkTheme
+import com.example.cvpilot.ui.util.shimmerLoadingAnimation
 
 @Composable
 fun CompactResumeCard(resume: Resume, onClick: () -> Unit) {
@@ -34,6 +35,8 @@ fun CompactResumeCard(resume: Resume, onClick: () -> Unit) {
 
     val iconSurfaceColor = if (isDark) Color(0xFF0D233A) else Color(0xFFE3F2FD)
     val labelColor = if (isDark) MaterialTheme.colorScheme.onSurfaceVariant else Color.Gray
+    val cardBgColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else Color(0xFFFFF9F0)
+
 
     ElevatedCard(
         onClick = onClick,
@@ -42,7 +45,7 @@ fun CompactResumeCard(resume: Resume, onClick: () -> Unit) {
             .height(140.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = cardBgColor
         )
     ) {
         Column(
@@ -88,6 +91,69 @@ fun CompactResumeCard(resume: Resume, onClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.primary,
                     maxLines = 1
                 )
+            }
+        }
+    }
+}
+
+@Composable
+fun CompactResumeSkeletonCard() {
+    val isDark = isSystemInDarkTheme()
+    val cardBgColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else Color(0xFFFFF9F0)
+
+    ElevatedCard(
+        modifier = Modifier
+            .width(220.dp)
+            .height(140.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = cardBgColor)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Icon Box Placeholder
+                Surface(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .shimmerLoadingAnimation(),
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.Transparent
+                ) {}
+                Spacer(Modifier.width(10.dp))
+                // Label Category Bar
+                Surface(
+                    modifier = Modifier
+                        .width(60.dp)
+                        .height(14.dp)
+                        .shimmerLoadingAnimation(),
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color.Transparent
+                ) {}
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Resume Name Line
+                Surface(
+                    modifier = Modifier
+                        .width(140.dp)
+                        .height(18.dp)
+                        .shimmerLoadingAnimation(),
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color.Transparent
+                ) {}
+                // Sub-headline Title Line
+                Surface(
+                    modifier = Modifier
+                        .width(100.dp)
+                        .height(12.dp)
+                        .shimmerLoadingAnimation(),
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color.Transparent
+                ) {}
             }
         }
     }

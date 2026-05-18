@@ -11,6 +11,14 @@ import javax.inject.Inject
 import io.github.jan.supabase.auth.auth
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import com.revenuecat.purchases.Purchases
+import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import com.revenuecat.purchases.CustomerInfo
+import com.revenuecat.purchases.PurchasesError
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
@@ -54,20 +62,50 @@ class ProfileViewModel @Inject constructor(
     private fun checkSubscriptionStatus() {
         viewModelScope.launch {
             try {
-                // TODO: Replace with your actual RevenueCat / database entitlement check engine
-                // Purchases.sharedInstance.getCustomerInfo(onSuccess = { customerInfo ->
-                //     isPremiumUser = customerInfo.entitlements["premium"]?.isActive == true
-                // }, onError = {})
+                // Convert RevenueCat interface callbacks cleanly into a coroutine suspension point
+                val customerInfo = suspendCancellableCoroutine<CustomerInfo?> { continuation ->
+                    Purchases.sharedInstance.getCustomerInfo(object : ReceiveCustomerInfoCallback {
+                        override fun onReceived(customerInfo: CustomerInfo) {
+                            if (continuation.isActive) continuation.resume(customerInfo)
+                        }
 
-                // Placeholder balance logic:
-                isPremiumUser = false
+                        override fun onError(error: PurchasesError) {
+                            android.util.Log.e("REVENUECAT_DEBUG", "Error fetching customer info: ${error.message}")
+                            if (continuation.isActive) continuation.resume(null)
+                        }
+                    })
+                }
+
+                // Verify if the premium entitlement identifier is active
+                isPremiumUser = customerInfo?.entitlements?.get("premium")?.isActive == true
+
+                // Assign credits balance based on subscription tier state
                 creditsRemaining = if (isPremiumUser) 999 else 3
+
             } catch (e: Exception) {
+                android.util.Log.e("PROFILE_DEBUG", "Subscription check crash: ${e.message}")
                 isPremiumUser = false
+                creditsRemaining = 0
             }
         }
     }
 
+    fun updateProfileName(newName: String) {
+        viewModelScope.launch {
+            try {
+                // Update the user metadata attributes inside Supabase Auth management
+                supabaseClient.auth.updateUser {
+                    data = buildJsonObject {
+                        put("full_name", newName)
+                    }
+                }
+                // Update local state immediately so UI refreshes cleanly
+                userName = newName
+            } catch (e: Exception) {
+                android.util.Log.e("PROFILE_DEBUG", "Failed to update profile name: ${e.message}")
+            }
+        }
+    }
     fun signOut(onSignOutSuccess: () -> Unit) {
         viewModelScope.launch {
             try {

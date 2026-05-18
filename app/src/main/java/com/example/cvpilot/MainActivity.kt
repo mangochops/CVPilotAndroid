@@ -34,6 +34,11 @@ import androidx.navigation.navArgument
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
+import com.example.cvpilot.features.Profile.LegalDocumentView
+import com.example.cvpilot.features.Profile.ContactSupportView
+import com.example.cvpilot.features.Profile.ProfileViewModel
+import com.example.cvpilot.features.Profile.EditProfileView
+import com.example.cvpilot.features.Profile.PremiumSubscriptionView
 
 
 sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
@@ -103,6 +108,12 @@ class MainActivity : ComponentActivity() {
                         MainScreen(
                             onNavigateToDeepScreen = { destinationRoute ->
                                 rootNavController.navigate(destinationRoute)
+                            },
+                            onLogout = {
+                                isLoggedIn = false
+                                rootNavController.navigate("login") {
+                                    popUpTo("main_app") { inclusive = true }
+                                }
                             }
                         )
                     }
@@ -123,27 +134,40 @@ class MainActivity : ComponentActivity() {
                         CoverLetterDetailsPlaceholderScreen(letterId = letterId, onBack = { rootNavController.popBackStack() })
                     }
 
-                    composable("edit_profile_screen") {
-                        // TODO: Implement EditProfileView()
-                        Text("Edit Profile Screen")
+                    composable("premium") {
+                        PremiumSubscriptionView(
+                            onDismiss = { rootNavController.popBackStack() },
+                            onSuccess = {
+                                // Success logic block callback handles syncs back up to your account components
+                                rootNavController.popBackStack()
+                            }
+                        )
+                    }
 
+
+                    composable("edit_profile") {
+                        val profileViewModel: ProfileViewModel = hiltViewModel()
+                        EditProfileView(
+                            viewModel = profileViewModel,
+                            onBack = { rootNavController.popBackStack() }
+                        )
                     }
-                    composable("premium_subscription_screen") {
-                        // TODO: Implement PremiumSubscriptionView()
-                        Text("Premium Subscription Screen")
+                    composable("support") {
+                        ContactSupportView(onBack = { rootNavController.popBackStack() })
                     }
-                    composable("ats_analytics_screen") {
-                        // TODO: Implement AtsAnalyticsView()
-                        Text("ATS Analytics Screen")
+
+                    composable("privacy") {
+                        LegalDocumentView(
+                            title = "Privacy Policy",
+                            onBack = { rootNavController.popBackStack() }
+                        )
                     }
-                    composable("contact_support_screen") {
-                        // TODO: Implement ContactSupportView()
-                        Text("Contact Support Screen")
-                    }
-                    composable("privacy_policy_screen") {
-                        // TODO: Implement PrivacyPolicyView()
-                        Text("Privacy Policy Screen")
-                    }
+
+//                    composable("premium") {
+//                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+//                            Text("Premium Screen Placeholder")
+//                        }
+//                    }
                 }
             }
         }
@@ -151,7 +175,10 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun MainScreen(onNavigateToDeepScreen: (String) -> Unit) {
+fun MainScreen(
+    onNavigateToDeepScreen: (String) -> Unit,
+    onLogout: () -> Unit
+    ) {
     val items = listOf(
         Screen.Home,
         Screen.Resumes,
@@ -198,14 +225,15 @@ fun MainScreen(onNavigateToDeepScreen: (String) -> Unit) {
                             // Switches the active bottom bar tab to index 1 (Resumes)
                             selectedItem = 1
                         }
-                        "edit_profile" -> onNavigateToDeepScreen("edit_profile_screen")
-                        "premium" -> onNavigateToDeepScreen("premium_subscription_screen")
-                        "analytics" -> onNavigateToDeepScreen("ats_analytics_screen")
-                        "support" -> onNavigateToDeepScreen("contact_support_screen")
-                        "privacy" -> onNavigateToDeepScreen("privacy_policy_screen")
+                        "edit_profile" -> onNavigateToDeepScreen("edit_profile")
+                        "premium" -> onNavigateToDeepScreen("premium")
+//                        "terms" -> onNavigateToDeepScreen("terms")
+                        "support" -> onNavigateToDeepScreen("support")
+                        "privacy" -> onNavigateToDeepScreen("privacy")
                     }
                     println("Navigating to $route")
                 },
+                onLogoutNavigate = onLogout,
                 modifier = modifier
             )
         }

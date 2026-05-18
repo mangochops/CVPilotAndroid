@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material3.Icon
 import com.example.cvpilot.models.CoverLetter
 import androidx.compose.foundation.isSystemInDarkTheme
+import com.example.cvpilot.ui.util.shimmerLoadingAnimation
 
 @Composable
 fun CompactCoverLetterCard(letter: CoverLetter, onClick: () -> Unit) {
@@ -80,6 +81,75 @@ fun CompactCoverLetterCard(letter: CoverLetter, onClick: () -> Unit) {
                 color = textColor,
                 overflow = TextOverflow.Ellipsis
             )
+            Text(
+                text = letter.jobTitle ?: "New Job",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                maxLines = 1
+            )
+        }
+    }
+}
+
+@Composable
+fun CompactCoverLetterSkeletonCard() {
+    val isDark = isSystemInDarkTheme()
+    val cardBgColor = if (isDark) MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f) else Color(0xFFFFF9F0)
+
+    ElevatedCard(
+        modifier = Modifier
+            .width(220.dp)
+            .height(140.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = cardBgColor)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                // Icon Box Placeholder
+                Surface(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .shimmerLoadingAnimation(),
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.Transparent
+                ) {}
+                Spacer(Modifier.width(10.dp))
+                // Label Category Bar
+                Surface(
+                    modifier = Modifier
+                        .width(70.dp)
+                        .height(14.dp)
+                        .shimmerLoadingAnimation(),
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color.Transparent
+                ) {}
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                // Company Name Skeleton Line
+                Surface(
+                    modifier = Modifier
+                        .width(130.dp)
+                        .height(18.dp)
+                        .shimmerLoadingAnimation(),
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color.Transparent
+                ) {}
+                // Job Title Skeleton Line
+                Surface(
+                    modifier = Modifier
+                        .width(90.dp)
+                        .height(12.dp)
+                        .shimmerLoadingAnimation(),
+                    shape = RoundedCornerShape(4.dp),
+                    color = Color.Transparent
+                ) {}
+            }
         }
     }
 }

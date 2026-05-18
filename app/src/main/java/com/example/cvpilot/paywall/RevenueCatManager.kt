@@ -7,8 +7,6 @@ import com.revenuecat.purchases.CustomerInfo
 
 object RevenueCatManager {
 
-    // SET THIS TO true to bypass the paywall during development
-    // SET THIS TO false once you have your Developer Accounts
     private const val DEBUG_MODE = true
 
     fun isProUser(callback: (Boolean) -> Unit) {
@@ -18,11 +16,11 @@ object RevenueCatManager {
             return
         }
 
-        // Real logic (will fail without Dev Accounts/API Keys)
         try {
             Purchases.sharedInstance.getCustomerInfo(object : ReceiveCustomerInfoCallback {
                 override fun onReceived(customerInfo: CustomerInfo) {
-                    val isPro = customerInfo.entitlements["pro_access"]?.isActive == true
+                    // Match with your "pro" identifier check used inside the Paywall component logic
+                    val isPro = customerInfo.entitlements["pro"]?.isActive == true
                     callback(isPro)
                 }
 

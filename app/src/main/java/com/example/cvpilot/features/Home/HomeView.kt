@@ -35,6 +35,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import com.example.cvpilot.features.CoverLetter.CoverLetterSheetContent
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import com.example.cvpilot.ui.component.CompactResumeSkeletonCard
+import com.example.cvpilot.ui.component.CompactCoverLetterSkeletonCard
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -97,13 +99,17 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
 
             if (viewModel.isLoading) {
                 // Use a more premium looking indicator or skeleton loaders here
-                LinearProgressIndicator(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
                         .padding(horizontal = 16.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
-                )
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    repeat(3) {
+                        CompactResumeSkeletonCard()
+                    }
+                }
             } else if (viewModel.recentResumes.isEmpty()) {
                 Text(
                     "No generations yet. Try tailoring a CV!",
@@ -145,10 +151,17 @@ fun HomeView(modifier: Modifier = Modifier,viewModel: HomeViewModel = hiltViewMo
             // Logic to handle empty vs loaded states
             if (viewModel.isLoading) {
                 // Show a horizontal skeleton or a simple indicator
-                LinearProgressIndicator(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    repeat(3) {
+                        CompactCoverLetterSkeletonCard()
+                    }
+                }
             } else if (viewModel.recentCoverLetters.isEmpty()) {
                 Text(
                     "Your generated letters will appear here.",
